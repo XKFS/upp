@@ -249,6 +249,8 @@ private:
 		Image  img;
 		String tip;
 		bool   highlight = false;
+		Color  ink = SColorText();
+		Font   font = StdFont();
 
 		int    GetHeight() const;
 		int    GetRight() const  { return y + GetHeight(); }
@@ -265,9 +267,11 @@ private:
 
 public:
 	void Clear();
+	int  GetCount() const                                        { return tab.GetCount(); }
 	void Add(const Image& img, const String& tip, bool highlight = false);
 	void SetCursor(int i);
 	int  GetCursor() const                                       { return cursor; }
+	void Set(int i, const String& text, Color ink, Font font = StdFont());
 
 	RightTabs();
 };
@@ -334,7 +338,7 @@ struct FindInFilesDlg : WithFindInFilesLayout<TopWindow> {
 struct WebSearchTab : WithSetupWebSearchTabLayout<ParentCtrl> {
 	void Load();
 	void Save();
-	bool EditDlg(String& name, String& uri, String& zico);
+	bool EditDlg(String& name, String& uri, String& ico16, String& ico32);
 	void Add();
 	void Sync();
 	void Edit();
@@ -357,6 +361,8 @@ void SearchEnginesDefaultSetup();
 String SearchEnginesFile();
 
 int ApplyChanges(LineEdit& editor, const String& new_content);
+
+struct RepoDiff;
 
 struct Ide : public TopWindow, public WorkspaceWork, public IdeContext, public MakeBuild {
 public:
@@ -477,6 +483,7 @@ public:
 	EscValue         macro_api;
 
 	RightTabs   btabs;
+	int         error_tab_i = 0; // index of btabs "Errors"
 	StaticRect  bottom;
 	Splitter    editor_bottom;
 	Console     console;
@@ -522,6 +529,8 @@ public:
 	bool      replace_in_files = false; // Find in files replace or Replace found items mode - do not update things
 
 	String    editfile2;
+
+	String    scratch_back; // to get back from Alt-M scratchfile
 
 	Vector<String> tablru;
 	int            tabi;
@@ -642,7 +651,7 @@ public:
 	int       insert_include;
 	int       bordercolumn;
 	bool      persistent_find_replace;
-	bool      find_replace_restore_pos;
+	bool      find_replace_restore_pos = false;
 	int       spellcheck_comments;
 	bool      wordwrap_comments = true;
 	bool      wordwrap = false;
@@ -656,6 +665,14 @@ public:
 	bool      win_deactivated = false;
 	bool      block_caret = false;
 	bool      bar_branch = true;
+	bool      search_downloads =
+#ifdef PLATFORM_MACOS
+		false
+#else
+		true
+#endif
+	;
+		
 
 	// Formats editor's code with Ide format parameters
 	void FormatJSON_XML(bool xml);
@@ -1005,7 +1022,7 @@ public:
 		void  GotoDirDiffRight(int line, DirDiffDlg *df);
 		void  DoDirDiff();
 		void  DoPatchDiff();
-		void  RunRepoDiff(const String& filepath, int cursor = -1);
+		RepoDiff *RunRepoDiff(const String& filepath, int line = -1);
 		void  AsErrors();
 		void  RemoveDs();
 		void  FindDesignerItemReferences(const String& id, const String& name);
@@ -1287,6 +1304,8 @@ void HighlightLine(const String& path, Vector<LineEdit::Highlight>& hln, const W
 String GetGitBranchRaw(const String& dir);
 
 Index<String> GetAllNests(bool sleep = false);
+
+bool MapFlag(const VectorMap<class String, class String>& map, const char *key);
 
 #include "urepo.h"
 

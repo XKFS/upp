@@ -43,7 +43,7 @@ bool Ctrl::painting = false;
 void   Ctrl::SetData(const Value&) {}
 Value  Ctrl::GetData() const       { return Value(); }
 
-void Ctrl::Paint(Draw& draw)                        {}
+void Ctrl::Paint(Draw& w)                           {}
 int  Ctrl::OverPaint() const                        { return 0; }
 
 void Ctrl::Activate()                               {}
@@ -296,6 +296,7 @@ void Ctrl::Show(bool ashow) {
 	if(visible != ashow) {
 		visible = true;
 		fullrefresh = false;
+		erasebg = true;
 		RefreshFrame();
 		visible = ashow;
 		fullrefresh = false;
@@ -552,6 +553,7 @@ Ctrl::Ctrl() {
 	unicode = false;
 	popupgrab = false;
 	fullrefresh = false;
+	erasebg = false;
 	akv = false;
 	layout_id_literal = false;
 	top = false;
@@ -954,7 +956,7 @@ void Ctrl::ReSkin()
 		win->RefreshLayoutDeep();
 		win->DoSkin();
 		win->RefreshFrame();
-#ifdef PLATFORM_WIN32
+#ifdef GUI_WIN32
 		win->UseImmersiveDarkModeForWindowBorder();
 #endif
 	}

@@ -65,7 +65,7 @@ void RichPara::Flush(Draw& draw, const PaintInfo& pi, wchar *text,
 		}
 		if(!IsNull(f.link) && !IsNull(pi.hyperlink) && !(fnt.IsUnderline() || f.dashed)) {
 			fnt.Underline();
-			if(!pi.darktheme && IsNull(pi.textcolor))
+			if(IsNull(pi.textcolor))
 				ink = pi.hyperlink;
 		}
 		x = zx0;
@@ -375,6 +375,8 @@ void RichPara::Paint(PageDraw& pw, RichContext rc, const PaintInfo& pi,
 				hg++;
 			}
 		rc.py.y += linecy;
+		if(pi.single_line)
+			break;
 	}
 	Size sz = RichTextImg::EndParaChar().GetSize();
 	if(sz.cy < z * lineascent && !IsNull(pi.showcodes))

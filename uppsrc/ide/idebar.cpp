@@ -63,7 +63,14 @@ void Ide::File(Bar& menu)
 	if(findarg(ToLower(fn), ".cpp", ".c", ".cxx", ".h", ".cc", ".hpp") >= 0)
 		fn = ".cpp";
 	fn = "scratchpad" + fn;
-	menu.AddMenu(AK_SCRATCHPAD, CtrlImg::open(), [=] { EditFile(ConfigFile(fn)); })
+	menu.AddMenu(AK_SCRATCHPAD, CtrlImg::open(), [=] {
+			String path = ConfigFile(fn);
+			if(editfile == path && scratch_back.GetCount())
+				path = scratch_back;
+			else
+				scratch_back = editfile;
+			EditFile(path);
+		})
 	    .Text(fn)
 		.Help("Open scratchpad file");
 	menu.AddMenu(AK_SAVEFILE, CtrlImg::save(), THISBACK(DoSaveFile))
@@ -587,6 +594,7 @@ void Ide::FilePropertiesMenu(Bar& menu)
 					file.Add(map[i]);
 			});
 		}
+		int ii = 0;
 		for(int pass = 0; pass < 2; pass++) {
 			bool sep = true;
 			for(String p : pass ? file : difflru)
@@ -594,6 +602,8 @@ void Ide::FilePropertiesMenu(Bar& menu)
 					if(sep)
 						bar.Separator();
 					sep = false;
+					if(++ii > 80) // sanity..
+						return;
 					bar.AddMenu(p, IdeImg::DiffNext(), [=] { DiffWith(p); })
 					    .Help("Show differences between the current and that file");
 				}

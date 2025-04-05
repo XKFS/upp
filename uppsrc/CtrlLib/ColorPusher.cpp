@@ -2,8 +2,6 @@
 
 namespace Upp {
 
-ColorPusher::~ColorPusher() {}
-
 void ColorPusher::Paint(Draw& w)
 {
 	Size sz = GetSize();
@@ -24,7 +22,7 @@ void ColorPusher::Paint(Draw& w)
 				w.DrawRect(x + cx / 2, y, cx - cx / 2, cy, DarkTheme(c));
 			}
 			else
-				w.DrawRect(x, y, cx, cy, color);
+				w.DrawRect(x, y, cx, cy, colors.IsDarkContent() ? DarkTheme(color) : color);
 		};
 		if(withtext || withhex) {
 			DrawColor(2, 2, sz.cy - 4, sz.cy - 4);
@@ -119,8 +117,6 @@ ColorPusher::ColorPusher()
 	SetFrame(EditFieldFrame());
 }
 
-ColorButton::~ColorButton() {}
-
 Size ColorButton::GetMinSize() const
 {
 	return DPI(Size(24, 24));
@@ -145,7 +141,7 @@ void ColorButton::Paint(Draw& w)
 	if(IsNull(color))
 		w.DrawImage(center.x + push, center.y + push, nullimage);
 	else
-		w.DrawImage(center.x + push, center.y + push, image, color);
+		w.DrawImage(center.x + push, center.y + push, image, colors.IsDarkContent() ? DarkTheme(color) : color);
 	w.DrawImage(center.x + push, center.y + push, staticimage);
 }
 

@@ -30,7 +30,7 @@ String GetSw(Ctrl& sw, const char *flag) {
 
 void MainConfigDlg::FlagDlg()
 {
-	VectorMap<String, Index<String>> flags;
+	VectorMap<String, Tuple<String, Index<String>>> flags;
 
 	PPInfo pp;
 	pp.SetIncludes(TheIde()->GetCurrentIncludePath() + ";" + GetClangInternalIncludes());
@@ -40,11 +40,15 @@ void MainConfigDlg::FlagDlg()
 		const Package& pk = wspc.GetPackage(i);
 		String pk_name = wspc[i];
 		for(int i = 0; i < pk.file.GetCount(); i++)
-			for(const Tuple<String, int>& m : pp.GetFileFlags(SourcePath(pk_name, pk.file[i]))) {
-				String f = m.a;
-				f.TrimStart("flag");
-				flags.GetAdd(f).FindAdd(pk_name);
-			}
+			if(!pk.file[i].separator || 1)
+				for(auto m : ~pp.GetFileFlags(SourcePath(pk_name, pk.file[i]))) {
+					String f = m.key;
+					f.TrimStart("flag");
+					auto& fl = flags.GetAdd(f);
+					fl.b.FindAdd(pk_name);
+					if(m.value.GetCount() > fl.a.GetCount())
+						fl.a = m.value;
+				}
 	}
 	
 	SortByKey(flags);
@@ -58,11 +62,14 @@ void MainConfigDlg::FlagDlg()
 		ctrl.Create<Option>().NoWantFocus();
 	});
 	cfg.accepts.AddColumn("Flag");
+	cfg.accepts.AddColumn("Comment");
 	cfg.accepts.AddColumn("Packages");
 	cfg.accepts.SetLineCy(Zy(20));
-	cfg.accepts.ColumnWidths("26 122 204");
+	cfg.accepts.ColumnWidths("29 140 458 117");
+	cfg.accepts.EvenRowColor();
+	cfg.accepts.NoCursor();
 	for(const auto& f : ~flags)
-		cfg.accepts.Add(false, f.key, Join(f.value.GetKeys(), ", "));
+		cfg.accepts.Add(false, f.key, f.value.a, Join(f.value.b.GetKeys(), ", "));
 	
 	cfg.other.SetFilter(FlagFilterM);
 	cfg.gui <<= false;
@@ -101,7 +108,8 @@ MainConfigDlg::MainConfigDlg(const Workspace& wspc_) : wspc(wspc_) {
 	Sizeable().Zoomable();
 	fe.AddFrame(cb);
 	fe.SetFilter(FlagFilterM);
-	cb.SetImage(CtrlImg::smallright()).NoWantFocus();
+//	cb.SetImage(CtrlImg::smallright()).NoWantFocus();
+	cb.SetLabel("..").NoWantFocus();
 	cb <<= THISBACK(FlagDlg);
 	list.AddColumn("Flags", 3).Edit(fe);
 	list.AddColumn("Optional name", 2).Edit(ce);

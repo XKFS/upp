@@ -114,7 +114,7 @@ onst]_[@(0.0.255) void]_`*[*@3 ptr], [_^size`_t^ size`_t]_[*@3 size])&]
 word]_[*@3 h])&]
 [s2;%% This functions `"hashes all bits together`". One purpose is 
 to bring the entropy of higher bits down so that the hash can 
-be limited by masking, other purpose is to provide hash for integral 
+be limited by masking, other purpose is to provide hash for integer 
 numbers.&]
 [s2;%% &]
 [s4; &]
@@ -131,6 +131,21 @@ for binary value 1010, this value is 4. For 0, the value is 0.&]
 [s2;%% Returns true if [%-*@3 x] can be converted to int64 without 
 loosing the precision.&]
 [s3;%% &]
+[s4; &]
+[s5;:Upp`:`:CountBits`(dword`): [@(0.0.255) int] [* CountBits]([_^Upp`:`:dword^ dword] 
+[*@3 mask])&]
+[s5;:Upp`:`:CountBits64`(uint64`): [@(0.0.255) int] [* CountBits64]([_^Upp`:`:uint64^ uint6
+4] [*@3 mask])&]
+[s2;%% Returns the total number of set bits in a given bit [%-*@3 mask].&]
+[s3; &]
+[s4; &]
+[s5;:Upp`:`:CountTrailingZeroBits`(dword`): [@(0.0.255) int] [* CountTrailingZeroBits](dw
+ord [*@3 x])&]
+[s5;:Upp`:`:CountTrailingZeroBits64`(uint64`): [@(0.0.255) int] [* CountTrailingZeroBits6
+4](uint64 [*@3 x])&]
+[s2; [%% Returns the index of first non`-zero bit in (from least significant 
+bit). If] [*@3 x] is zero, the result is undefined.&]
+[s3; &]
 [s4; &]
 [s5;:Upp`:`:Peek16le`(const void`*`): [@(0.0.255) int]_[* Peek16le]([@(0.0.255) const]_[@(0.0.255) v
 oid]_`*[*@3 ptr])&]
