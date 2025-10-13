@@ -2,8 +2,6 @@
 
 namespace Upp {
 
-ColorPusher::~ColorPusher() {}
-
 void ColorPusher::Paint(Draw& w)
 {
 	Size sz = GetSize();
@@ -24,7 +22,7 @@ void ColorPusher::Paint(Draw& w)
 				w.DrawRect(x + cx / 2, y, cx - cx / 2, cy, DarkTheme(c));
 			}
 			else
-				w.DrawRect(x, y, cx, cy, color);
+				w.DrawRect(x, y, cx, cy, colors.IsDarkContent() ? DarkTheme(color) : color);
 		};
 		if(withtext || withhex) {
 			DrawColor(2, 2, sz.cy - 4, sz.cy - 4);
@@ -119,8 +117,6 @@ ColorPusher::ColorPusher()
 	SetFrame(EditFieldFrame());
 }
 
-ColorButton::~ColorButton() {}
-
 Size ColorButton::GetMinSize() const
 {
 	return DPI(Size(24, 24));
@@ -133,20 +129,24 @@ void ColorButton::Paint(Draw& w)
 	Point center = (sz - isz) / 2;
 	if(GUI_GlobalStyle() >= GUISTYLE_XP)
 		ChPaint(w, sz, style->look[!IsEnabled() ? CTRL_DISABLED : push ? CTRL_PRESSED
-		                                        : HasMouse() ? CTRL_HOT : CTRL_NORMAL]);
+		                                        : HasMouseIn() ? CTRL_HOT : CTRL_NORMAL]);
 	else {
 		w.DrawRect(sz, SColorFace);
 		if(push)
 			DrawFrame(w, sz, SColorShadow, SColorLight);
 		else
-		if(HasMouse())
+		if(HasMouseIn())
 			DrawFrame(w, sz, SColorLight, SColorShadow);
 	}
-	if(IsNull(color))
-		w.DrawImage(center.x + push, center.y + push, nullimage);
+	if(IsEnabled()) {
+		if(IsNull(color))
+			w.DrawImage(center.x + push, center.y + push, nullimage);
+		else
+			w.DrawImage(center.x + push, center.y + push, image, colors.IsDarkContent() ? DarkTheme(color) : color);
+		w.DrawImage(center.x + push, center.y + push, staticimage);
+	}
 	else
-		w.DrawImage(center.x + push, center.y + push, image, color);
-	w.DrawImage(center.x + push, center.y + push, staticimage);
+		w.DrawImage(center.x + push, center.y + push, staticimage, SColorDisabled());
 }
 
 void  ColorButton::MouseEnter(Point p, dword keyflags)

@@ -131,7 +131,7 @@ void UppHubDlg::Install(const Index<String>& ii_, bool update)
 			if(n) {
 				String dir = GetHubDir() + '/' + n->name;
 				if(!DirectoryExists(dir)) {
-					String cmd = "git clone ";
+					String cmd = GetGitPath() + " clone ";
 					if(n->branch.GetCount())
 						cmd << "-b " + n->branch << ' ';
 					cmd << n->repo;
@@ -150,11 +150,11 @@ void UppHubDlg::Install(const Index<String>& ii_, bool update)
 									}
 					}
 				} else if (update) {
-					String cmd = "git -C ";
+					String cmd = GetGitPath() + " -C ";
 					cmd << dir << " clean -fxd";
 					PutConsole(cmd);
 					system(cmd);
-					cmd = "git -C ";
+					cmd = GetGitPath() + " -C ";
 					cmd << dir << " pull";
 					PutConsole(cmd);
 					system(cmd);
@@ -175,7 +175,7 @@ bool UppHubAuto(const String& main)
 		Index<String> missing;
 		for(int i = 0; i < wspc.GetCount(); i++) {
 			String p = wspc[i];
-			if(!FileExists(PackagePath(p)))
+			if(!FileExists(PackageFile(p)))
 				missing.FindAdd(p);
 		}
 		

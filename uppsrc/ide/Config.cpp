@@ -187,7 +187,7 @@ void Sentinel(Stream& s, const char *txt)
 
 void Ide::Serialize(Stream& s)
 {
-	int version = 31;
+	int version = 33;
 	Sentinel(s, "before 12341234");
 	s.Magic(0x12341234);
 	Sentinel(s, "after magic");
@@ -216,6 +216,8 @@ void Ide::Serialize(Stream& s)
 	s % font2;
 	s % show_status_bar;
 	s % toolbar_in_row;
+	if(version >= 33)
+		s % disable_custom_caption;
 	s % filetabs;
 	s % auto_enclose;
 	s % persistent_find_replace;
@@ -229,6 +231,8 @@ void Ide::Serialize(Stream& s)
 		s % block_caret;
 	if(version >= 30)
 		s % bar_branch;
+	if(version >= 32)
+		s % search_downloads;
 	if(version >= 7)
 		s % warnwhitespace;
 	s % tabs_icons;

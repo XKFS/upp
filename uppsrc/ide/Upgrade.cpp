@@ -10,7 +10,7 @@ void Ide::UpgradeTheIDE()
 	String target_dir = idepath + "/" + name + ".new";
 	DeleteFolderDeep(target_dir);
 	RealizeDirectory(target_dir);
-	
+
 	newpath = target_dir + "/" + name + ".app";
 	bakpath = idepath + "/" + name + ".bak.app";
 	idepath << "/" << name << ".app";
@@ -33,11 +33,13 @@ void Ide::UpgradeTheIDE()
 #endif
 	release.createmap = false;
 	release.version.Clear();
-	release.def.blitz = false;
 	release.def.debug = false;
-	release.package.Clear();
-	
+	release.def.blitz = MapFlag(GetMethodVars(method), "RELEASE_BLITZ");
+
 	targetmode = 1;
+
+	if(!GetCtrl())
+		Clean();
 
 	if(Build()) {
 		#ifdef PLATFORM_COCOA
@@ -59,7 +61,7 @@ void Ide::UpgradeTheIDE()
 		}
 	}
 
-	
+
 	LoadFromString(release, tmbak);
 	targetmode = tbak;
 }

@@ -376,6 +376,50 @@ public:
 	String GetKey(int groupIndex, int keyIndex)                  { return settings[groupIndex].GetKey(keyIndex); }
 };
 
+// ------------------- Multipart memory streams --------------
+
+class StringsStreamOut : public Stream {
+protected:
+	virtual  void  _Put(int w);
+	virtual  void  _Put(const void *data, dword size);
+
+private:
+	int            part_size;
+	StringBuffer   wdata;
+	Vector<String> part;
+	
+	void           ResetBuffer();
+
+public:
+	virtual  int64 GetSize() const;
+	virtual  bool  IsOpen() const;
+	
+	Vector<String> PickResult();
+	
+	StringsStreamOut(int part_size = 1024*1024 - 128); // - 128 - leave some space for header in huge block
+};
+
+class StringsStreamIn : public Stream {
+protected:
+	virtual  int   _Term();
+	virtual  int   _Get();
+	virtual  dword _Get(void *data, dword size);
+
+public:
+	virtual  int64 GetSize() const;
+	virtual  bool  IsOpen() const;
+
+private:
+	const Vector<String>& part;
+	int                   i;
+	int64                 size;
+	
+	void                  ResetBuffer();
+
+public:
+	StringsStreamIn(const Vector<String>& part);
+};
+
 // ------------------- Advanced streaming --------------------
 
 void CheckedSerialize(const Event<Stream&> serialize, Stream& stream, int version = Null);
@@ -384,55 +428,54 @@ bool Load(Event<Stream&> serialize, Stream& stream, int version = Null);
 bool Store(Event<Stream&> serialize, Stream& stream, int version = Null);
 bool LoadFromFile(Event<Stream&> serialize, const char *file = NULL, int version = Null);
 bool StoreToFile(Event<Stream&> serialize, const char *file = NULL, int version = Null);
-
-template <class T>
-void SerializeTFn(Stream &s, T *x)
-{
-	s % *x;
-}
-
-template <class T>
-Event<Stream&> SerializeCb(T& x)
-{
-	return callback1(SerializeTFn<T>, &x);
-}
+String StoreAsString(Event<Stream&> serialize);
+bool   LoadFromString(Event<Stream&> serialize, const String& s);
+Vector<String> StoreAsStrings(Event<Stream&> serialize);
+bool           LoadFromStrings(Event<Stream&> serialize, const Vector<String>& s);
 
 template <class T>
 bool Load(T& x, Stream& s, int version = Null) {
-	return Load(SerializeCb(x), s, version);
+	return Load([&](Stream& s) { s % x; }, s, version);
 }
 
 template <class T>
 bool Store(T& x, Stream& s, int version = Null) {
-	return Store(SerializeCb(x), s, version);
+	return Store([&](Stream& s) { s % x; }, s, version);
 }
 
 template <class T>
 bool LoadFromFile(T& x, const char *name = NULL, int version = Null) {
-	return LoadFromFile(SerializeCb(x), name, version);
+	return LoadFromFile([&](Stream& s) { s % x; }, name, version);
 }
 
 template <class T>
 bool StoreToFile(T& x, const char *name = NULL, int version = Null) {
-	return StoreToFile(SerializeCb(x), name, version);
+	return StoreToFile([&](Stream& s) { s % x; }, name, version);
 }
 
 template <class T>
 String StoreAsString(T& x) {
-	StringStream ss;
-	Store(x, ss);
-	return ss;
+	return StoreAsString([&](Stream& s) { s % x; });
 }
 
 template <class T>
 bool LoadFromString(T& x, const String& s) {
-	StringStream ss(s);
-	return Load(x, ss);
+	return LoadFromString([&](Stream& s) { s % x; }, s);
+}
+
+template <class T>
+Vector<String> StoreAsStrings(T& x) {
+	return StoreAsStrings([&](Stream& s) { s % x; });
+}
+
+template <class T>
+bool LoadFromStrings(T& x, const Vector<String>& s) {
+	return LoadFromStrings([&](Stream& s) { s % x; }, s);
 }
 
 void             RegisterGlobalConfig(const char *name);
 void             RegisterGlobalSerialize(const char *name, Event<Stream&> WhenSerialize);
-void             RegisterGlobalConfig(const char *name, Event<>  WhenFlush);
+void             RegisterGlobalConfig(const char *name, Event<> WhenFlush);
 
 String           GetGlobalConfigData(const char *name);
 void             SetGlobalConfigData(const char *name, const String& data);
@@ -456,10 +499,6 @@ bool LoadFromGlobal(Event<Stream&> serialize, const char *name);
 void StoreToGlobal(Event<Stream&> serialize, const char *name);
 
 void SerializeGlobalConfigs(Stream& s);
-
-#ifdef PLATFORM_WINCE
-inline void abort() { TerminateProcess(NULL, -1); }
-#endif
 
 template <class T>
 hash_t HashBySerialize(const T& cont)

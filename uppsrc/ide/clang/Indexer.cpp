@@ -65,8 +65,7 @@ const VectorMap<String, Time>& FindMasterSourceCached(PPInfo& ppi, const Workspa
 			bool found = false;
 			VectorMap<String, Time> deps;
 			ArrayMap<String, Index<String>> dics;
-			Vector<Tuple<String, String, int>> flags;
-			ppi.GatherDependencies(master, deps, dics, flags, speculative, header_file, chain, found);
+			ppi.GatherDependencies(master, deps, dics, speculative, header_file, chain, found);
 			
 			MasterSourceCacheRecord& m = cache.GetAdd(header_file);
 			m.chain.Clear();
@@ -94,6 +93,7 @@ void AnnotationItem::Serialize(Stream& s)
 	  % type
 	  % id
 	  % pretty
+	  % pretty0
 	  % nspace
 	  % uname
 	  % nest
@@ -128,6 +128,7 @@ String CachedAnnotationPath(const String& source_file, const String& defines, co
 	  << defines
 	  << includes
 	  << master_file
+	  << "version 2.1"
 #ifdef _DEBUG
 	  << "debug" // to have different codebase for development
 #endif

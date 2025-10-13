@@ -247,9 +247,9 @@ void  ToolButton::Paint(Draw& w)
 //	Ctrl *q = GetParent()->GetParent();
 //	if(!q || !q->IsTransparent())
 //		w.DrawRect(sz, checked && !HasMouse() ? Blend(SColorFace, SColorLight) : SColorFace);
-	int li = IsEnabled() ? HasMouse() ? GetMouseLeft() ? CTRL_PRESSED
-						                               : checked ? CTRL_HOTCHECKED : CTRL_HOT
-				                       : checked ? CTRL_CHECKED : CTRL_NORMAL
+	int li = IsEnabled() ? HasMouseIn() ? GetMouseLeft() ? CTRL_PRESSED
+						                                 : checked ? CTRL_HOTCHECKED : CTRL_HOT
+				                        : checked ? CTRL_CHECKED : CTRL_NORMAL
 					     : CTRL_DISABLED;
 	ChPaint(w, sz, style->look[li]);
 	Point off = style->offset[li];
@@ -311,27 +311,27 @@ void  ToolButton::LeftDown(Point, dword)
 {
 	Refresh();
 	if(repeat)
-		WhenAction();
+		Action();
 }
 
 void  ToolButton::LeftRepeat(Point, dword)
 {
 	Refresh();
 	if(repeat)
-		WhenAction();
+		Action();
 }
 
 void  ToolButton::LeftUp(Point, dword)
 {
 	Refresh();
 	if(!repeat)
-		WhenAction();
+		Action();
 }
 
 bool  ToolButton::HotKey(dword key)
 {
 	if(key == accel) {
-		WhenAction();
+		Action();
 		return true;
 	}
 	return false;

@@ -165,7 +165,7 @@ int Pusher::GetVisualState() const
 {
 	return !IsShowEnabled() ? CTRL_DISABLED :
 	       IsPush() ? CTRL_PRESSED :
-	       HasMouse() ? CTRL_HOT :
+	       HasMouseIn() ? CTRL_HOT :
 	       CTRL_NORMAL;
 }
 
@@ -749,7 +749,7 @@ void  ButtonOption::Paint(Draw& w) {
 		dl.accesskey = accesskey;
 	int i = !IsShowEnabled() ? CTRL_DISABLED :
 	         push ? CTRL_PRESSED :
-	         HasMouse() || HasFocus() ? CTRL_HOT :
+	         HasMouseIn() || HasFocus() ? CTRL_HOT :
 	         CTRL_NORMAL;
 	if(option) i = CTRL_PRESSED;
 	ChPaint(w, sz, style->look[i]);
@@ -862,7 +862,7 @@ DataPusher::DataPusher()
 void DataPusher::RefreshAll()
 {
 	edge.Set(this, EditField::StyleDefault().edge, EditField::StyleDefault().activeedge);
-	edge.Mouse(HasMouse());
+	edge.Mouse(HasMouseIn());
 	edge.Push(IsPush());
 	edge.SetColor(EditField::StyleDefault().coloredge, GetPaper());
 	RefreshFrame();
@@ -937,6 +937,14 @@ Color DataPusher::GetPaper()
 	                 : IsShowEnabled() && !IsReadOnly() ? SColorPaper : SColorFace);
 }
 
+Value DataPusher::Format(const Value& v)
+{
+	Value h = v;
+	if(convertby)
+		h = convertby(h);
+	return convert->Format(h);
+}
+
 void DataPusher::Paint(Draw& w)
 {
 	Rect rc = GetSize();
@@ -946,7 +954,7 @@ void DataPusher::Paint(Draw& w)
 	if(IsPush() && GUI_GlobalStyle() < GUISTYLE_XP)
 		rc += Size(1, 1);
 	w.Clip(rc);
-	display -> Paint(w, rc, convert -> Format(data),
+	display -> Paint(w, rc, Format(data),
 		(IsEnabled() ? SColorText : SColorDisabled), Color(paper),
 		(HasFocus() ? Display::FOCUS : 0) | (IsReadOnly() ? Display::READONLY : 0));
 	w.End();

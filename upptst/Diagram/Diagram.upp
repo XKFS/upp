@@ -1,0 +1,11 @@
+uses
+	CtrlLib,
+	RichEdit;
+
+file
+	main.cpp,
+	app.tpp;
+
+mainconfig
+	"" = "GUI";
+

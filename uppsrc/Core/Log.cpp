@@ -308,7 +308,7 @@ void  LogStream::_Put(const void *data, dword size)
 		sTh.Put(*q++);
 }
 
-#ifdef flagCHECKINIT
+#ifdef flagCHECKINIT // Adds heap check and additional logging INITBLOCKs
 
 void InitBlockBegin__(const char *fn, int line) {
 	RLOG(fn << " " << line << " init block");
@@ -351,7 +351,8 @@ static char sLogPath[1024];
 void SyncLogPath__()
 {
 	Mutex::Lock __(log_mutex);
-	strcpy(sLogPath, ConfigFile(GetExeTitle()));
+	strcpy(sLogPath, GetFileFolder(GetUserConfigDir()) + "/.local/state/" + GetConfigGroup() + "/log/" + GetAppName());
+	RealizePath(sLogPath);
 }
 
 static void sLogFile(char *fn, const char *app = ".log")

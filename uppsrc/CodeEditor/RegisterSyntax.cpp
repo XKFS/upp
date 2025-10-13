@@ -38,8 +38,9 @@ void RegisterSyntaxModules()
 	RegisterCSyntax("cpp", CSyntax::HIGHLIGHT_CPP,
 	                "*.c *.cpp *.cc *.cxx *.h *.hpp *.hh *.hxx *.m *.mm *.icpp *.conf",
 	                "C/C++");
+	RegisterCSyntax("cuda", CSyntax::HIGHLIGHT_CUDA, "*.cu *.ci", "Cuda");
 	RegisterCSyntax("java", CSyntax::HIGHLIGHT_JAVA, "*.java", "Java");
-	RegisterCSyntax("js", CSyntax::HIGHLIGHT_JAVASCRIPT, "*.js", "JavaScript");
+	RegisterCSyntax("js", CSyntax::HIGHLIGHT_JAVASCRIPT, "*.js *.jsx *.ts *.tsx", "JavaScript");
 	RegisterCSyntax("cs", CSyntax::HIGHLIGHT_CS, "*.cs", "C#");
 	RegisterCSyntax("json", CSyntax::HIGHLIGHT_JSON, "*.json", "JSON");
 	RegisterCSyntax("css", CSyntax::HIGHLIGHT_CSS, "*.css", "Cascading Style Sheet");
@@ -50,6 +51,10 @@ void RegisterSyntaxModules()
 	RegisterCSyntax("usc", CSyntax::HIGHLIGHT_USC, "*.usc", "U++ widget definitions");
 	RegisterCSyntax("calc", CSyntax::HIGHLIGHT_CALC, "", "");
 	RegisterCSyntax("php", CSyntax::HIGHLIGHT_PHP, "*.php", "PHP");
+	RegisterCSyntax("dbg", CSyntax::HIGHLIGHT_DBG, "*.dbg", "Debugger pretty printing scripts");
+	RegisterCSyntax("glsl", CSyntax::HIGHLIGHT_GLSL,
+	                "*.vert *.tesc *.tese *.geom *.frag *.comp",
+	                "GLSL");
 	
 	EditorSyntax::Register("diff", callback(CreateDiffSyntax), "*.diff *.patch", "Diff");
 	

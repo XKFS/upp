@@ -36,7 +36,7 @@ String GetGitBranch(const String& dir)
 void Ide::MakeTitle()
 {
 	if(replace_in_files) return;
-
+	
 	String title;
 	title << Nvl(main, "TheIDE");
 
@@ -101,6 +101,7 @@ void Ide::MakeTitle()
 		title << " (scanning files)";
 	
 	Title(title.ToWString());
+	DoDisplay();
 }
 
 bool Ide::CanToggleReadOnly()
@@ -219,6 +220,8 @@ bool Ide::OpenMainPackage()
 	main.Clear();
 	if(!IsOpen())
 		Open();
+	if(IsExternalMode())
+		SyncEmptyPackage(p);
 	SetMain(p);
 	return true;
 }
@@ -401,16 +404,6 @@ void Ide::Activate()
 
 bool Ide::Key(dword key, int count)
 {
-	dword *k = IdeKeys::AK_DELLINE().key;
-	if(key == k[0] || key == k[1]) {
-		editor.DeleteLine();
-		return true;
-	}
-	k = IdeKeys::AK_CUTLINE().key;
-	if(key == k[0] || key == k[1]) {
-		editor.CutLine();
-		return true;
-	}
 	switch(key) {
 	case K_ALT|K_CTRL_UP:
 	case K_ALT|K_CTRL_DOWN:
@@ -558,27 +551,6 @@ void Ide::BookKey(int key)
 	Key(key, 1);
 }
 
-void Ide::DoDisplay()
-{
-	if(replace_in_files)
-		return;
-	Point p = editor.GetColumnLine(editor.GetCursor64());
-	String s;
-	s << "Ln " << p.y + 1 << ", Col " << p.x + 1;
-	int64 l, h;
-	editor.GetSelection(l, h);
-	if(h > l)
-		s << ", Sel " << h - l;
-	display.Set(s);
-	
-	ManageDisplayVisibility();
-}
-
-void Ide::ManageDisplayVisibility()
-{
-	display.Show(!designer);
-}
-
 void Ide::SetIdeState(int newstate)
 {
 	if(newstate != idestate)
@@ -598,7 +570,7 @@ void Ide::SetIdeState(int newstate)
 }
 
 void Ide::MakeIcon() {
-	Image li = IdeImg::PackageLarge2();
+	Image li = IdeImg::Icon256();
 	WString mp = main.ToWString();
 	if(!IsNull(mp))
 	{
@@ -607,12 +579,12 @@ void Ide::MakeIcon() {
 		Draw& mdraw = idraw.Alpha();
 		idraw.DrawImage(0, 0, li);
 		mdraw.DrawImage(0, 0, li, White);
-		int fh = DPI(14);
+		int fh = 112;
 		Size sz(0, 0);
 		Font font;
-		while(fh > DPI(8)) {
+		while(fh > (IsUHDMode() ? 64 : 80)) {
 			font = StdFont(fh);
-			sz = GetTextSize(mp, font) + Size(4, 2);
+			sz = GetTextSize(mp, font) + 8 * Size(4, 2);
 			if(sz.cx <= isz.cx)
 				break;
 			fh--;
@@ -621,12 +593,12 @@ void Ide::MakeIcon() {
 		int y = isz.cy - sz.cy;
 		idraw.DrawRect(x, y, sz.cx, sz.cy, White);
 		mdraw.DrawRect(x, y, sz.cx, sz.cy, White);
-		idraw.DrawText(x + 2, y + 1, mp, font, Black);
+		idraw.DrawText(x + 12, y + 1, mp, font, Black);
 		DrawFrame(idraw, x, y, sz.cx, sz.cy, LtBlue);
 		if(state_icon)
-			idraw.DrawImage(0, 0, decode(state_icon, 1, IdeImg::IconDebuggingLarge2(),
-			                                         2, IdeImg::IconRunningLarge2(),
-			                                         IdeImg::IconBuildingLarge2()));
+			idraw.DrawImage(0, 0, decode(state_icon, 1, IdeImg::IconDebuggingLarge256(),
+			                                         2, IdeImg::IconRunningLarge256(),
+			                                         IdeImg::IconBuildingLarge256()));
 		li = idraw;
 	}
 	LargeIcon(li);
@@ -635,10 +607,8 @@ void Ide::MakeIcon() {
 void Ide::SetIcon()
 {
 	int new_state_icon = 0;
-	if((bool)debugger && !IdeIsDebugLock()) {
+	if((bool)debugger && !IdeIsDebugLock())
 		new_state_icon = 1;
-		return;
-	}
 	else
 	if((GetTimeClick() / 800) & 1) {
 		if(debugger)
@@ -762,7 +732,7 @@ const Workspace& Ide::IdeWorkspace() const
 	}
 	else {
 		for(int i = 0; i < wspc.GetCount(); i++)
-			if(wspc.GetPackage(i).time != FileGetTime(PackagePath(wspc[i]))) {
+			if(wspc.GetPackage(i).time != FileGetTime(PackageFile(wspc[i]))) {
 				wspc.Scan(main);
 				break;
 			}
@@ -781,7 +751,7 @@ const Workspace& Ide::AssistWorkspace() const
 	}
 	else {
 		for(int i = 0; i < wspc.GetCount(); i++)
-			if(wspc.GetPackage(i).time != FileGetTime(PackagePath(wspc[i]))) {
+			if(wspc.GetPackage(i).time != FileGetTime(PackageFile(wspc[i]))) {
 				update = true;
 				break;
 			}

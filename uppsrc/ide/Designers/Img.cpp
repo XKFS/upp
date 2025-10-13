@@ -2,10 +2,16 @@
 
 void IdeImgView::Paint(Draw& w)
 {
-	Size sz = GetSize();
-	String t = (img_sz != img.GetSize() ? "Resized from: " : "Image size: ");
-	t << Format("%d x %d", img_sz.cx, img_sz.cy);
 	int tcy = Draw::GetStdFontCy();
+	Size sz = GetSize() - Size(5, 5 + tcy);
+	Size isz = img.GetSize();
+	Image m = img;
+	if(sz.cx < isz.cx || sz.cy < isz.cy) {
+		isz = GetFitSize(isz, sz);
+		m = CachedRescale(m, isz);
+	}
+	String t = (isz != img.GetSize() ? "Resized from: " : "Image size: ");
+	t << Format("%d x %d", img.GetWidth(), img.GetHeight());
 	w.DrawRect(0, 0, sz.cx, tcy, SColorFace());
 	w.DrawText(5, 0, t, StdFont(), SColorText());
 	int ii = 0;
@@ -15,7 +21,7 @@ void IdeImgView::Paint(Draw& w)
 			w.DrawRect(x, y, 16, 16, jj++ & 1 ? LtGray() : WhiteGray());
 		ii++;
 	}
-	w.DrawImage(5, 5 + tcy, img);
+	w.DrawImage(5, 5 + tcy, m);
 }
 
 void IdeImgView::EditMenu(Bar& menu)
@@ -26,7 +32,7 @@ void IdeImgView::EditMenu(Bar& menu)
 bool IsImgFile(const String& path)
 {
 	String s = ToLower(GetFileExt(path));
-	return s == ".png" || s == ".jpg" || s == ".gif" || s == ".bmp";
+	return s == ".png" || s == ".jpg" || s == ".gif" || s == ".bmp" || s == ".svg";
 }
 
 struct ImageViewModule : public IdeModule {
@@ -36,6 +42,13 @@ struct ImageViewModule : public IdeModule {
 	}
 	virtual IdeDesigner *CreateDesigner(const char *path, byte) {
 		if(IsImgFile(path)) {
+			if(ToLower(path).EndsWith(".svg"))
+			{
+				IdeImgView *d = new IdeImgView;
+				d->filename = path;
+				d->img = RenderSVGImage(Size(512, 512), LoadFile(path));
+				return d;
+			}
 			FileIn in(path);
 			One<StreamRaster> o = StreamRaster::OpenAny(in);
 			if(o) {
@@ -48,15 +61,8 @@ struct ImageViewModule : public IdeModule {
 				}
 				else {
 					IdeImgView *d = new IdeImgView;
-					d->img_sz = sz;
 					d->filename = path;
-					if(sz.cx <= 1024 && sz.cy <= 768)
-						d->img = o->GetImage();
-					else {
-						ImageEncoder m;
-						Rescale(m, GetFitSize(sz, Size(1024, 768)), *o, sz);
-						d->img = m;
-					}
+					d->img = o->GetImage();
 					return d;
 				}
 			}

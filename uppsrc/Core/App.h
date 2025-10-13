@@ -23,9 +23,16 @@ void    UseHomeDirectoryConfig(bool b = true);
 String  GetTempDirectory();
 String  TempFile(const char *filename);
 
+#ifdef PLATFORM_POSIX
+String GetUserConfigDir(const String& exe, bool *sandboxed = NULL);
+String GetUserConfigDir(bool *sandboxed = NULL);
+#endif
+
 String  GetConfigFolder();
 String  ConfigFile(const char *file);
 String  ConfigFile();
+
+void    SetConfigName(const String& s);
 
 void    SetConfigGroup(const char *group);
 String  GetConfigGroup();
@@ -108,5 +115,7 @@ String GetDocumentsFolder();
 String GetTemplatesFolder();
 String GetDownloadFolder();
 String GetProgramDataFolder();
+
+bool   IsUserAdmin();
 
 void   InstallCrashHook(void (*h)());

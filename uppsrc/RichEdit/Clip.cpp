@@ -2,9 +2,18 @@
 #include <Painter/Painter.h>
 
 namespace Upp {
+	
+RichObject RichEdit::Adjust(RichObject o)
+{
+	if(pixel_mode)
+		o.SetSize(o.GetPixelSize() * 8 / DPI(1));
+	return o;
+}
 
 void RichEdit::InsertImage()
 {
+	if(!allow_objects)
+		return;
 	if(!imagefs.ExecuteOpen(t_("Open image from file")))
 		return;
 	String fn = ~imagefs;
@@ -20,9 +29,25 @@ void RichEdit::InsertImage()
 	}
 	RichText clip;
 	RichPara p;
-	p.Cat(CreateRawImageObject(data), formatinfo);
+	p.Cat(Adjust(CreateRawImageObject(data)), formatinfo);
 	clip.Cat(p);
 	ClipPaste(clip, "image/raw");
+}
+
+void RichEdit::InsertDiagram()
+{
+	if(!allow_objects)
+		return;
+
+	RichObject o;
+	if(EditDiagram(o)) {
+		RichText clip;
+		RichPara p;
+		o.InitSize(0, 0);
+		p.Cat(o, formatinfo);
+		clip.Cat(p);
+		ClipPaste(clip, "image/qdf");
+	}
 }
 
 bool RichEdit::Accept(PasteClip& d, RichText& clip, String& fmt)
@@ -40,7 +65,7 @@ bool RichEdit::Accept(PasteClip& d, RichText& clip, String& fmt)
 					StringStream ss(data);
 					if(StreamRaster::OpenAny(ss) || ext == ".svg" && IsSVG(LoadFile(fn))) {
 						RichPara p;
-						p.Cat(CreateRawImageObject(data), formatinfo);
+						p.Cat(Adjust(CreateRawImageObject(data)), formatinfo);
 						clip.Cat(p);
 						fmt = "files";
 					}
@@ -90,7 +115,7 @@ bool RichEdit::Accept(PasteClip& d, RichText& clip, String& fmt)
 			Value data = rt.Read(d);
 			if(!IsNull(data)) {
 				RichPara p;
-				RichObject o = RichObject(&rt, data, pagesz);
+				RichObject o = Adjust(RichObject(&rt, data, pagesz));
 				p.Cat(o, formatinfo);
 				clip.Cat(p);
 				fmt = o.GetTypeName();

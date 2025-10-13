@@ -469,7 +469,8 @@ void AssistEditor::SyncCurrentFile(const CurrentFileContext& cfx)
 			SetAnnotations(f);
 
 			ClearErrors();
-			if(!IsCurrentFileDirty()) {
+			if(!IsCurrentFileDirty() && theide && theide->IsProjectFile(theide->editfile) && GetIdeWorkspace().GetCount()
+			   && !GetIdeWorkspace().GetPackage(0).nowarnings) {
 				errors = clone(ds);
 	
 				Vector<Point> err;
@@ -752,7 +753,7 @@ void AssistEditor::Assist(bool macros)
 					AssistItem& f = assist_item.Add();
 					(AutoCompleteItem&)f = m;
 					f.uname = ToUpper(f.name);
-					f.typei = assist_type.FindAdd(f.kind == CXCursor_MacroDefinition ? "<macros>" : f.parent);
+					f.typei = assist_type.FindAdd(f.kind == CXCursor_MacroDefinition ? String("<macros>") : f.parent);
 				}
 			PopUpAssist();
 		});
@@ -1028,6 +1029,16 @@ bool isaid(int c)
 bool AssistEditor::Key(dword key, int count)
 {
 	CloseTip();
+	dword *k = IdeKeys::AK_DELLINE().key;
+	if(key == k[0] || key == k[1]) {
+		DeleteLine();
+		return true;
+	}
+	k = IdeKeys::AK_CUTLINE().key;
+	if(key == k[0] || key == k[1]) {
+		CutLine();
+		return true;
+	}
 #ifdef _DEBUG
 	if(key == K_F12) {
 		DLOG("==================");

@@ -1,5 +1,4 @@
 #include "Painter.h"
-#include "Painter.h"
 
 #define LLOG(x)
 
@@ -85,7 +84,7 @@ void SvgParser::DoGradient(int gi, bool stroke)
 			r = r / sz;
 		}
 		Xform2D m;
-		
+
 		if(g.radial) {
 			m.x.x = r.x;
 			m.x.y = 0;
@@ -239,6 +238,38 @@ void SvgParser::ParseGradient(const XmlNode& n, bool radial)
 			s.offset = Nvl(StrDbl(m.Attr("offset")), offset);
 		}
 }
+void SvgParser::ParseStyle(const XmlNode& n)
+{
+	String text = n.GatherText();
+	try {
+		CParser p(text);
+		while(!p.IsEof()) {
+			if(p.Char('.') && p.IsId()) {
+				Vector<String> ids;
+				String id = p.ReadIdh();
+				ids.Add(id);
+				while(p.Char(',') && p.Char('.') && p.IsId()) {
+					id = p.ReadIdh();
+					ids.Add(id);
+				}
+
+				if(p.Char('{')) {
+					const char *b = p.GetPtr();
+					while(!p.IsChar('}') && !p.IsEof())
+						p.SkipTerm();
+
+					String style(b, p.GetPtr());
+					for(const String& id : ids)
+						classes.GetAdd(id) << style;
+				}
+				p.Char('}');
+			}
+			else
+				p.SkipTerm();
+		}
+	}
+	catch(CParser::Error) {}
+}
 
 void SvgParser::Poly(const XmlNode& n, bool line)
 {
@@ -357,6 +388,9 @@ void SvgParser::Element(const XmlNode& n, int depth, bool dosymbols)
 			else
 			if(m.IsTag("radialGradient"))
 				ParseGradient(m, true);
+			else
+			if(m.IsTag("style"))
+				ParseStyle(m);
 	}
 	else
 	if(n.IsTag("linearGradient"))
@@ -483,27 +517,8 @@ void SvgParser::Element(const XmlNode& n, int depth, bool dosymbols)
 		}
 	}
 	else
-	if(n.IsTag("style")) {
-		String text = n.GatherText();
-		try {
-			CParser p(text);
-			while(!p.IsEof()) {
-				if(p.Char('.') && p.IsId()) {
-					String id = p.ReadId();
-					if(p.Char('{')) {
-						const char *b = p.GetPtr();
-						while(!p.IsChar('}') && !p.IsEof())
-							p.SkipTerm();
-						classes.Add(id, String(b, p.GetPtr()));
-					}
-					p.Char('}');
-				}
-				else
-					p.SkipTerm();
-			}
-		}
-		catch(CParser::Error) {}
-	}
+	if(n.IsTag("style"))
+		ParseStyle(n);
 }
 
 void SvgParser::Items(const XmlNode& n, int depth)
@@ -543,11 +558,12 @@ SvgParser::SvgParser(Painter& sw)
 	Reset();
 }
 
-bool ParseSVG(Painter& p, const char *svg, Event<String, String&> resloader, Rectf *boundingbox)
+bool ParseSVG(Painter& p, const char *svg, Event<String, String&> resloader, Rectf *boundingbox, Color ink)
 {
 	SvgParser sp(p);
 	sp.bp.compute_svg_boundingbox = boundingbox;
 	sp.resloader = resloader;
+	sp.currentColor = ink;
 	if(!sp.Parse(svg))
 		return false;
 	if(boundingbox)
@@ -555,14 +571,14 @@ bool ParseSVG(Painter& p, const char *svg, Event<String, String&> resloader, Rec
 	return true;
 }
 
-bool RenderSVG(Painter& p, const char *svg, Event<String, String&> resloader)
+bool RenderSVG(Painter& p, const char *svg, Event<String, String&> resloader, Color ink)
 {
-	return ParseSVG(p, svg, resloader, NULL);
+	return ParseSVG(p, svg, resloader, NULL, ink);
 }
 
-bool RenderSVG(Painter& p, const char *svg)
+bool RenderSVG(Painter& p, const char *svg, Color ink)
 {
-	return RenderSVG(p, svg, Event<String, String&>());
+	return RenderSVG(p, svg, Event<String, String&>(), ink);
 }
 
 void GetSVGDimensions(const char *svg, Sizef& sz, Rectf& viewbox)
@@ -584,13 +600,13 @@ void GetSVGDimensions(const char *svg, Sizef& sz, Rectf& viewbox)
 Rectf GetSVGBoundingBox(const char *svg)
 {
 	NilPainter nil;
-	Rectf bb;
-	if(!ParseSVG(nil, svg, Event<String, String&>(), &bb))
+	Rectf bb = Null;
+	if(!ParseSVG(nil, svg, Event<String, String&>(), &bb, Black()))
 		return Null;
 	return bb;
 }
 
-Image RenderSVGImage(Size sz, const char *svg, Event<String, String&> resloader)
+Image RenderSVGImage(Size sz, const char *svg, Event<String, String&> resloader, Color ink)
 {
 	Rectf f = GetSVGBoundingBox(svg);
 	Sizef iszf = GetFitSize(f.GetSize(), Sizef(sz.cx, sz.cy) - 10.0);
@@ -602,13 +618,13 @@ Image RenderSVGImage(Size sz, const char *svg, Event<String, String&> resloader)
 	sw.Clear(White());
 	sw.Scale(min(isz.cx / f.GetWidth(), isz.cy / f.GetHeight()));
 	sw.Translate(-f.left, -f.top);
-	RenderSVG(sw, svg, resloader);
+	RenderSVG(sw, svg, resloader, ink);
 	return Image(ib);
 }
 
-Image RenderSVGImage(Size sz, const char *svg)
+Image RenderSVGImage(Size sz, const char *svg, Color ink)
 {
-	return RenderSVGImage(sz, svg, Event<String, String&>());
+	return RenderSVGImage(sz, svg, Event<String, String&>(), ink);
 }
 
 bool IsSVG(const char *svg)

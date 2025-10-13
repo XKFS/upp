@@ -1559,7 +1559,8 @@ void FileSel::Update() {
 						*preview <<= path;
 				}
 				Time tm = ff[0].last_write_time;
-				filetime = "     " + Format(tm);
+				filetime.AlignCenter();
+				filetime = Format(tm);
 			}
 		}
 	}
@@ -1753,8 +1754,11 @@ Image SynthetisePathIcon(const String& path)
 	ImagePainter iw(isz);
 	iw.Clear(RGBAZero());
 	int x = FoldHash(GetHashValue(path));
-	auto cl = [](int x) { return 128 + (x & 127); };
-	iw.Circle(DPI(8), DPI(8), DPI(7)).Fill(Color(cl(x), cl(x >> 7), cl(x >> 14))).Stroke(1, SBlack());
+	auto cl = [](int x) { return 100 + (x & 127); };
+	Color c = Color(cl(x), cl(x >> 7), cl(x >> 14));
+	iw.Circle(DPI(8), DPI(8), DPI(7))
+	  .Fill(DPI(4), DPI(4), Blend(White(), c, 80), DPI(8), DPI(8), DPI(7), c)
+	  .Stroke(1, Gray());
 	WString s = GetFileTitle(path).ToWString();
 	if(s.GetCount()) {
 		s = s.Mid(0, 1);
@@ -1886,10 +1890,10 @@ bool FileSel::Execute(int _mode) {
 		for(int i = 0; i < lru.GetCount(); i++)
 			if(IsFullPath(lru[i]) && filesystem->FolderExists(lru[i]))
 				dir.Add(lru[i]);
-		dir.SetDisplay(Single<FolderDisplay>(), max(16, Draw::GetStdFontCy()));
+		dir.SetDisplay(Single<FolderDisplay>(), max(16, GetStdFontCyA()));
 	}
 	else {
-		dir.SetDisplay(Single<HomeDisplay>(), max(16, Draw::GetStdFontCy()));
+		dir.SetDisplay(Single<HomeDisplay>(), max(16, GetStdFontCyA()));
 		if(filesystem->IsPosix()) {
 			if(String(~dir)[0] == '/')
 				dir <<= "";
@@ -2000,7 +2004,7 @@ bool FileSel::Execute(int _mode) {
 			h.Add(NormalizePath(~places.Get(i, 0)));
 		if(h.Find(d) < 0) {
 			LoadFromGlobal(glru, "GlobalFileSelectorLRU");
-			LruAdd(glru, d, 5);
+			LruAdd(glru, d, 12);
 			StoreToGlobal(glru, "GlobalFileSelectorLRU");
 		}
 	}
@@ -2239,21 +2243,12 @@ void FileSel::AddSystemPlaces(int row)
 FileSel& FileSel::AddStandardPlaces()
 {
 	AddPlace(GetHomeDirectory(), t_("Home"), "PLACES:FOLDER");
-#ifdef GUI_COCOA
-	AddPlace(GetSpecialDirectory(SF_NSDesktopDirectory), t_("Desktop"), "PLACES:FOLDER");
-	AddPlace(GetSpecialDirectory(SF_NSMusicDirectory), t_("Music"), "PLACES:FOLDER");
-	AddPlace(GetSpecialDirectory(SF_NSPicturesDirectory), t_("Pictures"), "PLACES:FOLDER");
-	AddPlace(GetSpecialDirectory(SF_NSMoviesDirectory), t_("Videos"), "PLACES:FOLDER");
-	AddPlace(GetSpecialDirectory(SF_NSDocumentDirectory), t_("Documents"), "PLACES:FOLDER");
-	AddPlace(GetSpecialDirectory(SF_NSDownloadsDirectory), t_("Downloads"), "PLACES:FOLDER");
-#else
 	AddPlace(GetDesktopFolder(), t_("Desktop"), "PLACES:FOLDER");
 	AddPlace(GetMusicFolder(), t_("Music"), "PLACES:FOLDER");
 	AddPlace(GetPicturesFolder(), t_("Pictures"), "PLACES:FOLDER");
 	AddPlace(GetVideoFolder(), t_("Videos"), "PLACES:FOLDER");
 	AddPlace(GetDocumentsFolder(), t_("Documents"), "PLACES:FOLDER");
 	AddPlace(GetDownloadFolder(), t_("Downloads"), "PLACES:FOLDER");
-#endif
 	AddPlaceSeparator();
 	AddSystemPlaces();
 #ifdef PLATFORM_WIN32

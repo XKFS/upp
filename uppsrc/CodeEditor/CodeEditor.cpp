@@ -593,6 +593,19 @@ void CodeEditor::MakeLineEnds()
 	Make(THISBACK(LineEnds));
 }
 
+void CodeEditor::ConvertToOverrides()
+{
+	Make([](String& out) {
+		out.Insert(0, " ");
+		out.Replace("\tvirtual\t", "\t");
+		out.Replace("\tvirtual ", "\t");
+		out.Replace(" virtual\t", " ");
+		out.Replace(" virtual ", " ");
+		out.Replace(";", " override;");
+		out.Remove(0, 1);
+	});
+}
+
 void CodeEditor::MoveNextWord(bool sel) {
 	int64 p = GetCursor64();
 	int64 e = GetLength64();
@@ -1315,9 +1328,8 @@ void CodeEditor::Zoom(int d)
 }
 
 void CodeEditor::MouseWheel(Point p, int zdelta, dword keyFlags) {
-	if(keyFlags & K_CTRL) {
+	if(keyFlags & K_CTRL)
 		Zoom(sgn(zdelta));
-	}
 	else
 		LineEdit::MouseWheel(p, zdelta, keyFlags);
 }

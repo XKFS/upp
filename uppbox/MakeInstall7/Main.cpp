@@ -79,14 +79,14 @@ String upptmp = tmp + "/upp";
 String ass = upptmp + "/uppsrc";
 String upp = home + "/upp.src";
 String uppsrc = upp + "/uppsrc";
-String bin = home + "/upp.bin";
+String bin = "/samba/work/upp.bin";
 
 int NoDigit(int c) { return IsDigit(c) ? 0 : c; }
 int FilterVersion(int c) { return c == ':' ? '_' : c; }
 
 void Make(String pkg, String exe)
 {
-	Syx("wine " + home + "/upp.win32/umk.exe u:/upp.src/uppsrc " + pkg + " u:/upp.src/uppbox/MakeInstall7/CLANGx64.bm" + " -arv "
+	Syx("wine " + home + "/upp.win32/umk.exe u:/upp.tmp/upp/uppsrc " + pkg + " u:/upp.src/uppbox/MakeInstall7/CLANGx64.bm" + " -arv "
 	    + "u:/upp.tmp/upp/" + exe);
 	FileDelete(upptmp + "/" + ForceExt(exe, ".map"));
 }

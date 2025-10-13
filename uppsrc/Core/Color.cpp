@@ -113,13 +113,6 @@ SColor::SColor(Color (*fn)())
 	color = ii | SCOLOR;
 }
 
-#ifdef _DEBUG
-SColor::~SColor()
-{
-	ASSERT(!IsMainRunning()); // SColor cannot be stack variable
-}
-#endif
-
 void SColor::Refresh()
 {
 	Mutex::Lock __(sColorMutex);
@@ -324,6 +317,11 @@ int  Grayscale(const Color& c)
 	return (77 * c.GetR() + 151 * c.GetG() + 28 * c.GetB()) >> 8;
 }
 
+double Difference(Color c1, Color c2)
+{
+	return 2.75 * abs(c2.GetR() - c1.GetR()) + 5.4 * abs(c2.GetG() - c1.GetG()) + abs(c2.GetB() - c1.GetB());
+}
+
 bool IsDark(Color c)
 {
 	return Grayscale(c) < 80;
@@ -345,6 +343,9 @@ double C_B = 0.2;
 
 Color DarkTheme(Color color)
 {
+	if(IsNull(color))
+		return Null;
+
 	double r = color.GetR();
 	double g = color.GetG();
 	double b = color.GetB();
@@ -360,8 +361,18 @@ Color DarkTheme(Color color)
 	};
 	
 	double target = 255 - Saturate255(int(Val() + saturation));
-	if(target < 30)
-		target *= (1 + (30 - target) / 30) * 1.5;
+	if(target < 30 && target >= 0) { // increase luminance of near black colors
+		static const double tab[] = { // 29 * log(target + 1) / log(30)
+			0, 5.91005636562468, 9.36721771666348, 11.8201127312494, 13.7227259177118,
+			15.2772740822882, 16.5916258276743, 17.730169096874, 18.734435433327,
+			19.6327822833365, 20.4454358591706, 21.1873304479128, 21.8698073118102,
+			22.501682193299, 23.0899436343753, 23.6402254624987, 24.1571357841859,
+			24.6444917989516, 25.1054910415395, 25.5428386489612, 25.9588435443378,
+			26.3554922247953, 26.7345061336924, 27.0973868135375, 27.4454518354237,
+			27.7798636774348, 28.1016531499904, 28.4117385589237, 28.7109415043374, 29 };
+		target = tab[(int)target];
+	}
+		//target *= (1 / 1.5 + (29 - target) / 29) * 1.5;
 	double ratio = target / 128;
 	
 	double m = max(r, g, b);

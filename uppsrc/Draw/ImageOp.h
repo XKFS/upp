@@ -32,7 +32,7 @@ void  Crop(RasterEncoder& tgt, Raster& img, const Rect& rc);
 Image Crop(const Image& img, const Rect& rc);
 Image Crop(const Image& img, int x, int y, int cx, int cy);
 
-Image AddMargins(const Image& img, int left, int top, int right, int bottom, RGBA color);
+Image AddMargins(const Image& img, int left, int top, int right, int bottom, RGBA color = RGBAZero());
 
 Rect  FindBounds(const Image& m, RGBA bg = RGBAZero());
 Image AutoCrop(const Image& m, RGBA bg = RGBAZero());
@@ -170,12 +170,26 @@ void  SysImageRealized(const Image& img); // SystemDraw realized Image handle in
 void  SysImageReleased(const Image& img); // SystemDraw dropped Image handle
 
 Image MakeImage(const ImageMaker& m);
-Image MakeImage(const Image& image, Image (*make)(const Image& image));
 
-void  SweepMkImageCache();
+template <class T, class M>
+Image MakeImage(T key, M make, bool paintonly = false) {
+	return MakeValue(
+		[&] { return key(); },
+		[&] (Value& v) {
+			Image img = make();
+			if(paintonly && !IsNull(img) && img.GetRefCount() == 1)
+				SetPaintOnly__(img);
+			v = img;
+			return img.GetLength() * sizeof(RGBA);
+		}
+	).template To<Image>();
+};
 
-void SetMakeImageCacheMax(int m); // obsolete
-void SetMakeImageCacheSize(int m); // obsolete
+Image AdjustImage(const Image& image, Image (*make)(const Image& image));
+
+void SweepMkImageCache(); // deprecated, use AdjustValueCache();
+void SetMakeImageCacheMax(int m); // deprecated, use SetupValueCache
+void SetMakeImageCacheSize(int m); // deprecated, use SetupValueCache
 
 Image MakeImagePaintOnly(const ImageMaker& m);
 
@@ -218,7 +232,7 @@ struct ImageFilterKernel {
 
 	void Init(double (*kfn)(double x), int a, int src_sz, int tgt_sz);
 	void Init(int filter, int src_sz, int tgt_sz);
-	
+
 	ImageFilterKernel() {}
 	ImageFilterKernel(double (*kfn)(double x), int a, int src_sz, int tgt_sz);
 };

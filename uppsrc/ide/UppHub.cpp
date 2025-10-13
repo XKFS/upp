@@ -23,11 +23,15 @@ Color StatusPaper(const String& status)
 	static SColor stable([] { return s_Make(SLtGreen()); });
 	static SColor rolling([] { return s_Make(SLtCyan()); });
 
-	return decode(status, "broken", broken,
-	                      "experimental", experimental,
-	                      "stable", stable,
-	                      "rolling", rolling,
-	                      SColorPaper());
+	if(status == "broken")
+		return broken;
+	if(status == "experimental")
+		return experimental;
+	if(status == "stable")
+		return stable;
+	if(status == "rolling")
+		return rolling;
+	return SColorPaper();
 }
 
 void VerifyUppHubRequirements()
@@ -228,7 +232,7 @@ void UppHubDlg::Menu(Bar& bar)
 		bar.Add("Open " + n->name + " Directory", [=] { ShellOpenFolder(p); });
 		bar.Add("Copy " + n->name + " Directory Path", [=] { WriteClipboardText(p); });
 		if(ide)
-			bar.Add("Terminal at " + n->name + " Directory", [=] { ide->LaunchTerminal(p); });
+			bar.Add("Terminal at " + n->name + " Directory", IdeImg::Terminal(), [=] { ide->LaunchTerminal(p); });
 		sep = true;
 	}
 
@@ -243,7 +247,7 @@ void UppHubDlg::Menu(Bar& bar)
 	bar.Add("Open UppHub Directory", [=] { ShellOpenFolder(hubdir); });
 	bar.Add("Copy UppHub Directory Path", [=] { WriteClipboardText(hubdir); });
 	if(ide)
-		bar.Add("Terminal at UppHub Directory", [=] { ide->LaunchTerminal(hubdir); });
+		bar.Add("Terminal at UppHub Directory", IdeImg::Terminal(), [=] { ide->LaunchTerminal(hubdir); });
 	bar.Separator();
 	bar.Add("Install everything..", [=] {
 		if(!PromptYesNo("Installing everything will take some time and will need a lot of storage space.&[/ Are you sure?"))
@@ -367,7 +371,7 @@ void UppHubDlg::Sync()
 	}
 	else {
 		qtf << "[* \1" << n->description << "\1]";
-		qtf << (loading ? "&[/ Loading more information]" : "&[/ Failed to get ]\1" + n->readme);
+		qtf << (loading ? String("&[/ Loading more information]") : String("&[/ Failed to get ]\1") + n->readme);
 	}
 	info <<= qtf;
 }
@@ -536,11 +540,23 @@ void UppHubDlg::Update()
 	if(!PromptYesNo("Pull updates for all modules?"))
 		return;
 	UrepoConsole console;
+
+	int errors = 0;
 	for(const UppHubNest& n : upv) {
 		String dir = GetHubDir() + "/" + n.name;
-		if(DirectoryExists(dir))
-			console.Git(dir, "pull --rebase");
+		if(!DirectoryExists(dir))
+			continue;
+
+		if(console.Git(dir, "pull --rebase") != 0)
+			++errors;
 	}
+	if(errors == 0)
+		return;
+
+	ErrorOK(
+		Format("Update failed (%d errors). Review the logs to diagnose and resolve the issues.",
+	           errors));
+	console.Perform();
 }
 
 void UppHubDlg::Install(const Index<String>& ii_)
@@ -618,6 +634,9 @@ String UppHub()
 
 void UppHubAuto(const String& main)
 {
+	if(IsExternalMode())
+		return;
+
 	bool noprompt = false;
 	Index<String> pmissing;
 	for(;;) {
@@ -626,7 +645,7 @@ void UppHubAuto(const String& main)
 		Index<String> missing;
 		for(int i = 0; i < wspc.GetCount(); i++) {
 			String p = wspc[i];
-			if(!FileExists(PackagePath(p)))
+			if(!FileExists(PackageFile(p)))
 				missing.FindAdd(p);
 		}
 

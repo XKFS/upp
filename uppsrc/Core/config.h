@@ -7,6 +7,8 @@
 #include <main.conf.h>
 #endif
 
+// defaults are CPU_64 CPU_UNALIDNED - only define differences
+
 #if __GNUC__
 
 	#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -24,7 +26,7 @@
 		#undef  WINVER
 		#undef  _WIN32_WINNT
 
-		#ifdef flagWIN10
+		#ifdef flagWIN10 // Force _WIN32_WINNT and NTDDI_VERSION to Win10 values
 			#define _WIN32_WINNT _WIN32_WINNT_WIN10
 			#undef NTDDI_VERSION
 			#define NTDDI_VERSION NTDDI_WIN10_19H1
@@ -50,7 +52,7 @@
 			#define PLATFORM_BSD 1
 			#define PLATFORM_MACOS 1
 			#define PLATFORM_OSX 1
-			#ifndef flagUSEMALLOC
+			#ifndef flagUSEMALLOC // Completely disable U++ heap allocator
 				#define STD_NEWDELETE
 			#endif
 		#else
@@ -79,21 +81,12 @@
 	#endif
 	
 	#if  __x86_64
-		#define CPU_LE 1
-		#define CPU_LITTLE_ENDIAN 1
-		#define CPU_UNALIGNED 1
 		#define CPU_X86 1
-		#define CPU_64 1
 		#define CPU_AMD64 1
 		#define CPU_SSE2 1
-		#define CPU_IA64 1
 	#elif __i386 || __i386__ || i386
-		#define CPU_LE 1
-		#define CPU_LITTLE_ENDIAN 1
-		#define CPU_UNALIGNED 1
 		#define CPU_X86 1
 		#define CPU_32 1
-		#define CPU_IA32 1
 		#define CPU_SSE2 1
 	#elif __sparc  // ToDo!
 		#define CPU_32 1
@@ -102,11 +95,7 @@
 		#define CPU_BIG_ENDIAN 1
 		#define CPU_ALIGNED 1
 	#elif __aarch64__
-		#define CPU_64 1
 		#define CPU_ARM 1
-		#define CPU_LE 1
-		#define CPU_LITTLE_ENDIAN 1
-		#define CPU_UNALIGNED 1
 		#ifdef __ARM_NEON
 			#define CPU_NEON 1
 		#endif
@@ -116,13 +105,8 @@
 		#ifdef __ARM_BIG_ENDIAN
 			#define CPU_BE 1
 			#define CPU_BIG_ENDIAN 1
-		#else
-			#define CPU_LE 1
-			#define CPU_LITTLE_ENDIAN 1
 		#endif
-		#ifdef __ARM_FEATURE_UNALIGNED
-			#define CPU_UNALIGNED 1
-		#else
+		#ifndef __ARM_FEATURE_UNALIGNED
 			#define CPU_ALIGNED 1
 		#endif
 		#ifdef __ARM_NEON
@@ -131,24 +115,21 @@
 	#elif __bfin
 		#define CPU_32 1
 		#define CPU_BLACKFIN
-		#define CPU_LE 1
-		#define CPU_LITTLE_ENDIAN 1
 		#define CPU_ALIGNED 1
 		#define _HAVE_NO_STDWSTRING 1
 		//BF toolchain has no support for __thread (TLS), so U++ Heap not possible
 		#define flagUSEMALLOC
 	#else // unknown CPU
-		#ifdef __LP64__
-			#define CPU_64
+		#ifndef __LP64__
+			#define CPU_32 1
 		#endif
-		#ifdef __LITTLE_ENDIAN__
-			#define CPU_LITTLE_ENDIAN 1
-			#define CPU_LE 1
+		#ifndef __LITTLE_ENDIAN__
+			#define CPU_BIG_ENDIAN 1
 		#endif
 	#endif
 #endif
 
-#ifdef flagFlatpak
+#ifdef flagFlatpak // Activates features for Flatpak compilation
 	#define FLATPAK 1
 #endif
 
@@ -162,27 +143,31 @@
 	
 	#define PLATFORM_WIN32 1
 
-	#define CPU_LE 1
-	#define CPU_LITTLE_ENDIAN 1
-	#define CPU_UNALIGNED 1
 	#define CPU_X86 1
 
 	#ifdef _WIN64
 		#define PLATFORM_WIN64 1
-		#define CPU_64 1
 		#define CPU_AMD64 1
 		#define CPU_SSE2 1
-		#define CPU_IA64 1
 	#else
 		#define CPU_32 1
-		#define CPU_IA32 1
 		#define CPU_SSE2 1
 	#endif
 #endif
 
-#ifdef  flagCLR
-#define flagUSEMALLOC
-#define STD_NEWDELETE
+#ifdef CPU_BIG_ENDIAN
+#error "Big endian CPUs are not supported anymore"
+#endif
+
+#define CPU_LITTLE_ENDIAN 1
+#define CPU_LE 1
+
+#ifndef CPU_32
+#define CPU_64 1
+#endif
+
+#ifndef CPU_ALIGNED
+#define CPU_UNALIGNED
 #endif
 
 #if __cplusplus >= 201103

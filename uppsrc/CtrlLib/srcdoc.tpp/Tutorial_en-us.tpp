@@ -1775,7 +1775,7 @@ be achieved with the previously described methods.&]
 [s0;l320;C%- &]
 [s0;l320;%- [*C@(0.0.255) struct][C  RandomRectCtrl ][C@(0.0.255) :][C  ][*C@(0.0.255) public][C  
 Ctrl `{]&]
-[s0;l320;%- [C     Rect  rect;]&]
+[s0;l320;%- [C     Rect  rect ][C@(0.0.255) `=][C  Rect(Size(][C@3 0][C , ][C@3 0][C ));]&]
 [s0;l320;%- [C     Color color;]&]
 [s0;l320;%- [C     ]&]
 [s0;l320;%- [C     ][*C@(0.0.255) void][C  Paint(Draw][C@(0.0.255) `&][C  w) 
@@ -1832,14 +1832,22 @@ upon Ctrl destruction.]&]
 ][C IsEmpty()) `{]&]
 [s0;l320;%- [C             start`_stop`_btn][C@(0.0.255) .][C SetLabel(][C@3 `"Stop!`"][C );]&]
 [s0;l320;%- [C             ]&]
+[s0;l320;%- [C             ][/C@4 // When the user clicks the `"Start`" 
+button, OnTimer() is immediately executed after]&]
+[s0;l320;%- [C             ][/C@4 // all related events have been processed, 
+to generate and display a random rectangle.]&]
+[s0;l320;%- [C             ][*_C SetTimeCallback(][*_C@3 0][*_C , ][*_C@(0.0.255) `[`=`]][*_C  
+`{ OnTimer(); `});]&]
+[s0;l320;%- [C             ]&]
+[s0;l320;%- [C             ][/C@4 // Calls OnTimer() every two seconds 
+to update the random position of a rectangle.]&]
 [s0;l320;%- [C             ][*_C SetTimeCallback(][*_C@(0.0.255) `-][*_C@3 2000][*_C , 
 ][*_C@(0.0.255) `[`=`]][*_C  `{ OnTimer(); `});]&]
 [s0;l320;%- [C         `} ][*C@(0.0.255) else][C  `{]&]
 [s0;l320;%- [C             ][*_C KillTimeCallback();]&]
 [s0;l320;%- [C             ]&]
 [s0;l320;%- [C             start`_stop`_btn][C@(0.0.255) .][C SetLabel(][C@3 `"Start!`"][C );]&]
-[s0;l320;%- [C             random`_rect`_ctrl][C@(0.0.255) .][C rect ][C@(0.0.255) `=][C  
-`{`};]&]
+[s0;l320;%- [C             random`_rect`_ctrl][C@(0.0.255) .][C rect.Clear();]&]
 [s0;l320;%- [C             random`_rect`_ctrl][C@(0.0.255) .][C Refresh();]&]
 [s0;l320;%- [C         `}]&]
 [s0;l320;%- [C     `}]&]
@@ -1914,7 +1922,7 @@ SLtYellow);]&]
 [s0;l320;%- [C+75         w][C@(0.0.255)+75 .][C+75 DrawText(][C@3+75 20][C+75 , 
 ][C@3+75 20][C+75 , ][*_C@(0.128.128)$(255.255.192)+75 t`_(][*_C@3$(255.255.192)+75 `"Hel
 lo translation engine!`"][*_C@(0.128.128)$(255.255.192)+75 )][C+75 , 
-Arial(][C@3+75 30][C+75 ), Blue);]&]
+Arial(][C@3+75 30][C+75 ), SBlue);]&]
 [s0;l320;%- [C+75     `}]&]
 [s0;l320;%- [C+75 `};]&]
 [s0;l320;C+75%- &]
@@ -1936,7 +1944,9 @@ Arial(][C@3+75 30][C+75 ), Blue);]&]
 [s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"pt`-pt`"); // Portuguese]&]
 [s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"ru`-ru`"); // Russian]&]
 [s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"tr`-tr`"); // Turkish]&]
-[s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"zh`-cn`"); // Traditional 
+[s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"zh`-cn`"); // Simplified 
+Chinese]&]
+[s0;l320;%- [C+75     ][/C@4+75 // SetLanguage(`"zh`-tw`"); // Traditional 
 Chinese]&]
 [s0;l320;%- [C+75     ]&]
 [s0;l320;%- [C+75     MyAppWindow()][C@(0.0.255)+75 .][C+75 Run();]&]
@@ -1975,7 +1985,8 @@ so for any errors we are sorry.&]
 [s0;l320;%- [C@(0.128.128)+75 ptPT][C+75 (][C@3+75 `"Minha aplicação`"][C+75 )]&]
 [s0;l320;%- [C@(0.128.128)+75 ruRU][C+75 (][C@3+75 `"Мое приложение`"][C+75 )]&]
 [s0;l320;%- [C@(0.128.128)+75 trTR][C+75 (][C@3+75 `"Benim başvurum`"][C+75 )]&]
-[s0;l320;%- [C@(0.128.128)+75 zhCN][C+75 (][C@3+75 `"我的應用程序`"][C+75 )]&]
+[s0;l320;%- [C@(0.128.128)+75 zhCN][C+75 (][C@3+75 `"我的应用程序`"][C+75 )]&]
+[s0;l320;%- [C@(0.128.128)+75 zhTW][C+75 (][C@3+75 `"我的應用程式`"][C+75 )]&]
 [s0;l320;C+75%- &]
 [s0;l320;%- [*C@(0.0.255)+75 T][C@(0.0.255)+75 `_][C+75 (][C@3+75 `"Hello 
 translation engine!`"][C+75 )]&]
@@ -1992,7 +2003,8 @@ de traduction!`"][C+75 )]&]
 [s0;l320;%- [C@(0.128.128)+75 ruRU][C+75 (][C@3+75 `"Привет движок 
 перевода!`"][C+75 )]&]
 [s0;l320;%- [C@(0.128.128)+75 trTR][C+75 (][C@3+75 `"Merhaba çeviri motoru!`"][C+75 )]&]
-[s0;l320;%- [C@(0.128.128)+75 zhCN][C+75 (][C@3+75 `"您好翻譯引擎！`"][C+75 )]&]
+[s0;l320;%- [C@(0.128.128)+75 zhCN][C+75 (][C@3+75 `"您好翻译引擎！`"][C+75 )]&]
+[s0;l320;%- [C@(0.128.128)+75 zhTW][C+75 (][C@3+75 `"您好翻譯引擎！`"][C+75 )]&]
 [s0;l320; &]
 [s5; Before checking the results of the application, let`'s take 
 a closer look at framework construction used in this example. 

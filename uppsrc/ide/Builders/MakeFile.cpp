@@ -34,10 +34,8 @@ void CppBuilder::AddMakeFile(MakeFile& makefile, String package,
 	const Vector<String>& all_uses, const Vector<String>& all_libraries,
 	const Index<String>& common_config, bool exporting)
 {
-	String packagepath = PackagePath(package);
 	Package pkg;
-	pkg.Load(packagepath);
-	String packagedir = GetFileFolder(packagepath);
+	pkg.Load(PackageFile(package));
 	Vector<String> src = GetUppDirs();
 	for(int i = 0; i < src.GetCount(); i++)
 		src[i] = UnixPath(src[i]);
@@ -120,9 +118,9 @@ void CppBuilder::AddMakeFile(MakeFile& makefile, String package,
 	}
 
 	makefile.config << outdir << " = $(UPPOUT)"
-		<< GetMakePath(AdjustMakePath(String().Cat() << package << '/' << method << '-' << Join(x, "-") << '/')) << "\n"
+		<< GetMakePath(AdjustMakePath(String().Cat() << package << '/' << GetFileTitle(method) << '-' << Join(x, "-") << '/')) << "\n"
 		<< macros << " = " << macdef << "\n";
-
+		
 	makefile.install << " \\\n\t$(" << outdir << ")";
 	makefile.rules << "$(" << outdir << "):\n\tmkdir -p $(" << outdir << ")\n\n";
 
@@ -320,7 +318,7 @@ void MakeBuild::SaveMakeFile(const String& fn, bool exporting)
 	inclist << " -I$(UPPOUT)"; // build_info.h is created there
 
 	makefile << "\n"
-		"UPPOUT = " << (exporting ? "_out/" : GetMakePath(AdjustMakePath(AppendFileName(uppout, String())), win32)) << "\n"
+		"UPPOUT = " << (exporting ? String("_out/") : GetMakePath(AdjustMakePath(AppendFileName(uppout, String())), win32)) << "\n"
 		"CINC   = " << inclist << "\n"
 		"Macro  = ";
 

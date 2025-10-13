@@ -190,34 +190,41 @@ String ResolveHostConsole()
 	
 	#ifdef PLATFORM_BSD
 	static const char *term[] = {
+		"/usr/local/bin/bobcat --",
 		"/usr/local/bin/mate-terminal -x",
 		"/usr/local/bin/gnome-terminal --window -x",
 		"/usr/local/bin/konsole -e",
 		"/usr/local/bin/lxterminal -e",
+		"/usr/local/bin/xfce4-terminal -x",
 		"/usr/local/bin/io.elementary.terminal -n -x",
 		"/usr/local/bin/xterm -e",
 	};
 	#else
 		#ifdef FLATPAK
 		static const char *term[] = {
+			"/run/host/bin/bobcat --",
 			"/run/host/bin/mate-terminal -x",
 			"/run/host/bin/gnome-terminal --window -x",
 			"/run/host/bin/konsole -e",
 			"/run/host/bin/lxterminal -e",
+			"/run/host/bin/xfce4-terminal -x",
 			"/run/host/bin/io.elementary.terminal -n -x",
 			"/run/host/bin/xterm -e",
 		};
 		#else
 		static const char *term[] = {
+			"/usr/bin/bobcat --",
 			"/usr/bin/mate-terminal -x",
 			"/usr/bin/gnome-terminal --window -x",
 			"/usr/bin/konsole -e",
 			"/usr/bin/lxterminal -e",
+			"/usr/bin/xfce4-terminal -x",
 			"/usr/bin/io.elementary.terminal -n -x",
 			"/usr/bin/xterm -e",
 		};
 		#endif
 	#endif
+
 	int ii = 0;
 	for(;;) { // If (pre)defined terminal emulator is not available, try to find one
 		int c = HostConsole.Find(' ');
@@ -265,17 +272,29 @@ void Host::Launch(const char *_cmdline, bool console)
 	if(console)
 		cmdline = "/usr/bin/open " + script;
 #else
-	String lc = ResolveHostConsole();
-	if(FileExists(lc))
-	{
-		if(console)
-			cmdline = HostConsole + " sh " + script;
+	if(console) {
+		String lc = ResolveHostConsole();
+		if(FileExists(lc))
+		{
+			#ifdef FLATPAK
+				auto real_hc = HostConsole;
+				real_hc.Replace(String("/run/host/"), String("/usr/"));
+				cmdline = FindCommand(exedirs, CMDLINE_PREFIX + real_hc + " sh " + script);
+			#else
+				cmdline = HostConsole + " sh " + script;
+			#endif
+		}
+		else
+		if(HostConsole.GetCount())
+			PutConsole("Warning: Terminal '" + lc + "' not found, executing in background.");
 	}
-	else
-	if(HostConsole.GetCount())
-		PutConsole("Warning: Terminal '" + lc + "' not found, executing in background.");
+#ifdef FLATPAK
+	else {
+		cmdline = FindCommand(exedirs, CMDLINE_PREFIX + cmdline);
+	}
 #endif
-
+#endif
+	
 	Buffer<char> cmd_buf(strlen(cmdline) + 1);
 	Vector<char *> args;
 	

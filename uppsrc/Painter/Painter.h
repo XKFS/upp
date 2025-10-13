@@ -3,7 +3,7 @@
 
 #include <Draw/Draw.h>
 
-#ifdef flagTIMING
+#ifdef flagPAINTER_TIMING // .Activate Painter benchmarking code
 #define PAINTER_TIMING(x)     RTIMING(x)
 #else
 #define PAINTER_TIMING(x)  // RTIMING(x)
@@ -165,10 +165,10 @@ protected:
 	virtual void   BeginOnPathOp(double q, bool absolute) = 0;
 
 protected:
-	void   DoArc0(double theta, double th_sweep, const Xform2D& m);
-	void   DoArc(const Pointf& c, const Pointf& r, double angle, double sweep, double xangle);
+	void   DoArc0(double theta, double th_sweep, const Xform2D& m, double scale = 1);
+	void   DoArc(const Pointf& c, const Pointf& r, double angle, double sweep, double xangle, double scale = 1);
 	void   DoSvgArc(const Pointf& rr, double xangle, int large, int sweep,
-	                 const Pointf& p, const Pointf& p0);
+	                 const Pointf& p, const Pointf& p0, double scale = 1);
 	void   DrawLineStroke(int width, Color color);
 
 public:
@@ -335,10 +335,19 @@ public:
 	void     Paint(const Painting& p);
 
 	Painter& Rectangle(double x, double y, double cx, double cy);
-	Painter& RoundedRectangle(double x, double y, double cx, double cy, double r);
+	Painter& Rectangle(const Rectf& r)                                             { return Rectangle(r.left, r.top, r.Width(), r.Height()); }
+	Painter& Rectangle(Pointf p1, Pointf p2)                                       { return Rectangle(Rectf(p1, p2)); }
 	Painter& RoundedRectangle(double x, double y, double cx, double cy, double r1, double r2);
+	Painter& RoundedRectangle(const Rectf& r, double r1, double r2)                { return RoundedRectangle(r.left, r.top, r.Width(), r.Height(), r1, r2); }
+	Painter& RoundedRectangle(Pointf p1, Pointf p2, double r1, double r2)          { return RoundedRectangle(Rectf(p1, p2), r1, r2); }
+	Painter& RoundedRectangle(double x, double y, double cx, double cy, double r)  { return RoundedRectangle(x, y, cx, cy, r, r); }
+	Painter& RoundedRectangle(const Rectf& rc, double r)                           { return RoundedRectangle(rc, r, r); }
+	Painter& RoundedRectangle(Pointf p1, Pointf p2, double r)                      { return RoundedRectangle(p1, p2, r, r); }
 	Painter& Ellipse(double x, double y, double rx, double ry);
+	Painter& Ellipse(const Rectf& r)                                               { Pointf c = r.CenterPoint(); return Ellipse(c.x, c.y, r.Width() / 2, r.Height() / 2); }
+	Painter& Ellipse(Pointf p1, Pointf p2)                                         { return Ellipse(Rectf(p1, p2)); }
 	Painter& Circle(double x, double y, double r);
+	Painter& Circle(Pointf p, double r)                                            { return Circle(p.x, p.y, r); }
 	
 	Painter& RectPath(int x, int y, int cx, int cy);
 	Painter& RectPath(const Rect& r);
@@ -451,15 +460,15 @@ protected:
 	virtual void   BeginOnPathOp(double q, bool abs);
 };
 
-bool  RenderSVG(Painter& p, const char *svg, Event<String, String&> resloader);
-bool  RenderSVG(Painter& p, const char *svg);
+bool  RenderSVG(Painter& p, const char *svg, Event<String, String&> resloader, Color ink = SBlack());
+bool  RenderSVG(Painter& p, const char *svg, Color ink = SBlack());
 
 void  GetSVGDimensions(const char *svg, Sizef& sz, Rectf& viewbox);
 Rectf GetSVGBoundingBox(const char *svg);
 Rectf GetSVGPathBoundingBox(const char *path);
 
-Image RenderSVGImage(Size sz, const char *svg, Event<String, String&> resloader);
-Image RenderSVGImage(Size sz, const char *svg);
+Image RenderSVGImage(Size sz, const char *svg, Event<String, String&> resloader, Color ink = SBlack());
+Image RenderSVGImage(Size sz, const char *svg, Color ink = SBlack());
 
 bool IsSVG(const char *svg);
 

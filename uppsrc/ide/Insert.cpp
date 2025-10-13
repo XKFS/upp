@@ -153,8 +153,8 @@ String SelectInsertFile()
 	return SelectFileOpen(
 		"All files (*.*)\t*.*\n"
 		"Graphics files (*.png *.bmp *.jpg *.jpeg *.gif *.ico *.svg)\t*.png *.bmp *.jpg *.jpeg *.gif *.ico *.svg\n"
-		"Source files (*.cpp *.h *.hpp *.c *.C *.cc *.cxx *.icpp *.diff *.patch *.lay *.py *.pyc *.pyd *.pyo *.iml *.java *.lng *.sch *.usc *.rc *.brc *.upt *.witz *.js)\t"
-			"*.cpp *.h *.hpp *.c *.C *.cc *.cxx *.icpp *.diff *.patch *.lay *.py *.pyc *.pyd *.pyo *.iml *.java *.lng *.sch *.usc *.rc *.brc *.upt *.witz *.js\n"
+		"Source files (*.cpp *.h *.hpp *.c *.C *.cc *.cxx *.icpp *.diff *.patch *.lay *.py *.pyc *.pyd *.pyo *.iml *.java *.lng *.sch *.usc *.dbg *.rc *.brc *.upt *.witz *.js)\t"
+			"*.cpp *.h *.hpp *.c *.C *.cc *.cxx *.icpp *.diff *.patch *.lay *.py *.pyc *.pyd *.pyo *.iml *.java *.lng *.sch *.usc *.dbg *.rc *.brc *.upt *.witz *.js\n"
 		"Web files (*.js *.css *.html *.htm *.htmls)\t*.js *.css *.html *.htm *.htmls\n"
 		"Data files (*.csv *.xml *.json)\t*.csv *.xml *.json\n"
 		"Text files (*.txt *.log *.info)\t*.txt *.log *.info\n"
@@ -175,7 +175,6 @@ void Ide::InsertFilePath(bool c)
 		editor.Paste(path.ToWString());
 	}
 }
-
 
 void Ide::InsertAs(const String& data)
 {
@@ -223,7 +222,7 @@ void Ide::InsertAs()
 		InsertAs(txt);
 }
 
-void Ide::InsertFileBase64()
+void Ide::InsertFileContent()
 {
 	if(editor.IsReadOnly())
 		return;
@@ -236,6 +235,47 @@ void Ide::InsertFileBase64()
 		}
 		InsertAs(LoadFile(path));
 	}
+}
+
+void Ide::InsertParameters()
+{
+	if(designer)
+		return;
+	if(!editor.WaitCurrentFile())
+		return;
+	AnnotationItem cm = editor.FindCurrentAnnotation();
+	CParser p(cm.pretty);
+	int lvl = 0;
+	String id;
+	String params;
+	try {
+		while(!p.IsEof()) {
+			if(p.Char('(')) {
+				lvl++;
+				id.Clear();
+			}
+			else
+			if(p.Char(')')) {
+				if(lvl == 1 && id.GetCount())
+					MergeWith(params, ", ", id);
+				lvl--;
+				id.Clear();
+			}
+			else
+			if(p.Char(',')) {
+				if(lvl == 1 && id.GetCount())
+					MergeWith(params, ", ", id);
+				id.Clear();
+			}
+			else
+			if(p.IsId())
+				id = p.ReadId();
+			else
+				p.SkipTerm();
+		}
+	}
+	catch(CParser::Error) {}
+	InsertText(params);
 }
 
 void Ide::InsertMenu(Bar& bar)
@@ -270,15 +310,17 @@ void Ide::InsertMenu(Bar& bar)
 				n++;
 			}
 		}
+		if(n > 0)
+			bar.Separator();
 	}
-	bar.Separator();
 	bar.Add("Insert color..", THISBACK(InsertColor));
 	bar.Add("Insert .iml Image..", [=] { InsertImage(); });
 	bar.Add("Insert sequence..", THISBACK(InsertSequence));
+	bar.Add("Insert function parameters..", [=] { InsertParameters(); });
 	bar.Add("Insert file path..", THISBACK1(InsertFilePath, false));
 	bar.Add("Insert file path as C string..", THISBACK1(InsertFilePath, true));
 	bar.Add("Insert clipboard as..", [=] { InsertAs(); });
-	bar.Add("Insert file as..", THISBACK(InsertFileBase64));
+	bar.Add("Insert file as..", THISBACK(InsertFileContent));
 	bar.Add(IdeKeys::AK_INSERTDATE, [=] {
 		Date d = GetSysDate();
 		InsertText(Format("%d-%02d-%02d", d.year, d.month, d.day));
@@ -327,8 +369,8 @@ void Ide::ToggleWordwrap()
 void Ide::EditorMenu(Bar& bar)
 {
 	bar.Sub("Assist", [=](Bar& bar) { AssistMenu(bar); });
-	InsertAdvanced(bar);
 	Reformat(bar);
+	InsertAdvanced(bar);
 	bar.MenuSeparator();
 	OnlineSearchMenu(bar);
     bar.Add(IsClipboardAvailableText() && (editor.IsSelection() || editor.GetLength() < 1024*1024),

@@ -8,6 +8,8 @@ bool SilentMode;
 
 String GetUmkFile(const char *fn)
 {
+	if(FileExists(fn))
+		return NormalizePath(fn);
 	if(DirectoryExists(fn) || *fn == '.')
 		return Null;
 	String h = ConfigFile(fn);
@@ -86,6 +88,8 @@ void SetupUmkUppHub()
 
 CONSOLE_APP_MAIN
 {
+	SetConfigName("theide");
+
 #ifdef PLATFORM_POSIX
 	setlinebuf(stdout);
 	CreateBuildMethods();
@@ -158,7 +162,9 @@ CONSOLE_APP_MAIN
 						n = 10 * n + s[1] - '0';
 						s++;
 					}
-					n = minmax(n, 1, 32);
+					if(!n)
+						n = CPU_Cores();
+					n = minmax(n, 1, 256);
 					PutVerbose("Hydra threads: " + AsString(n));
 					ide.console.SetSlots(n);
 					break;
@@ -250,7 +256,7 @@ CONSOLE_APP_MAIN
 		Index<String> missing;
 		for(int i = 0; i < wspc.GetCount(); i++) {
 			String p = wspc[i];
-			if(!FileExists(PackagePath(p)))
+			if(!FileExists(PackageFile(p)))
 				missing.FindAdd(p);
 		}
 		if(missing.GetCount()) {
@@ -283,7 +289,7 @@ CONSOLE_APP_MAIN
 		ide.method = bp;
 
 		if(ccfile) {
-			ide.SaveCCJ(GetFileDirectory(PackagePath(ide.main)) + "compile_commands.json", false);
+			ide.SaveCCJ(GetFileDirectory(PackageFile(ide.main)) + "compile_commands.json", false);
 			SetExitCode(0);
 			return;
 		}

@@ -43,7 +43,7 @@ bool Ctrl::painting = false;
 void   Ctrl::SetData(const Value&) {}
 Value  Ctrl::GetData() const       { return Value(); }
 
-void Ctrl::Paint(Draw& draw)                        {}
+void Ctrl::Paint(Draw& w)                           {}
 int  Ctrl::OverPaint() const                        { return 0; }
 
 void Ctrl::Activate()                               {}
@@ -296,6 +296,7 @@ void Ctrl::Show(bool ashow) {
 	if(visible != ashow) {
 		visible = true;
 		fullrefresh = false;
+		erasebg = true;
 		RefreshFrame();
 		visible = ashow;
 		fullrefresh = false;
@@ -552,6 +553,7 @@ Ctrl::Ctrl() {
 	unicode = false;
 	popupgrab = false;
 	fullrefresh = false;
+	erasebg = false;
 	akv = false;
 	layout_id_literal = false;
 	top = false;
@@ -703,8 +705,9 @@ bool Ctrl::IsNoLayoutZoom;
 
 void InitRichTextZoom()
 {
-	Size h = 96 * Ctrl::Bsize / Ctrl::Dsize;
-	SetRichTextStdScreenZoom(min(h.cx, h.cy), 600);
+//	Size h = 96 * Ctrl::Bsize / Ctrl::Dsize;
+//	SetRichTextStdScreenZoom(min(h.cx, h.cy), 600);
+	SetRichTextStdScreenZoom(96 * DPI(1), 600);
 	Ctrl::ReSkin();
 }
 
@@ -954,7 +957,7 @@ void Ctrl::ReSkin()
 		win->RefreshLayoutDeep();
 		win->DoSkin();
 		win->RefreshFrame();
-#ifdef PLATFORM_WIN32
+#ifdef GUI_WIN32
 		win->UseImmersiveDarkModeForWindowBorder();
 #endif
 	}
@@ -1023,7 +1026,7 @@ String Ctrl::Name0() const {
 	return s;
 }
 
-String Ctrl::Name(Ctrl *ctrl)
+String Ctrl::Name(const Ctrl *ctrl)
 {
 	return Upp::Name(ctrl);
 }
@@ -1054,7 +1057,7 @@ bool   Ctrl::InLoop() const
 bool   Ctrl::InCurrentLoop() const
 {
 	GuiLock __;
-	return GetLoopCtrl() == this;
+	return GetLoopCtrl() && GetLoopCtrl()->GetOwner() == GetOwner();
 }
 
 #ifdef HAS_TopFrameDraw

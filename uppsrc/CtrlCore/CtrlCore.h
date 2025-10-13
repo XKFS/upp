@@ -4,15 +4,14 @@
 #include <RichText/RichText.h>
 #include <Painter/Painter.h>
 
-#ifdef  flagNOGTK
-#undef  flagGTK
+#ifdef  flagNOGTK // prevents linking with GTK libraries. Impplies X11.
 #define flagX11
 #endif
 
 #include <guiplatform.h>
 
 #ifndef GUIPLATFORM_INCLUDE
-	#ifdef flagVIRTUALGUI
+	#ifdef flagVIRTUALGUI // Required for VirtualGui package (simple GUI host implemented by virtual functions)
 		#define VIRTUALGUI 1
 	#endif
 
@@ -32,12 +31,9 @@
 	#elif PLATFORM_WIN32
 		#define GUIPLATFORM_INCLUDE "Win32Gui.h"
 	#else
-		#ifdef flagX11
+		#ifdef flagX11 // forces the legacy X11 backend (instead of GTK)
 			#define GUIPLATFORM_INCLUDE "X11Gui.h"
 		#else
-			#ifndef flagGTK
-				#define flagGTK
-			#endif
 			#define GUIPLATFORM_INCLUDE "Gtk.h"
 		#endif
 	#endif
@@ -74,8 +70,6 @@ public:
 	GuiUnlock()  { n = LeaveGuiMutexAll(); }
 	~GuiUnlock() { EnterGuiMutex(n); }
 };
-
-bool ScreenInPaletteMode(); // Deprecated
 
 typedef ImageDraw SystemImageDraw;
 
@@ -301,6 +295,7 @@ class PasteClip {
 
 public:
 	bool   IsAvailable(const char *fmt) const;
+	bool   IsAnyAvailable(const char *fmt) const;
 	String Get(const char *fmt) const;
 
 	bool   Accept();
@@ -330,7 +325,7 @@ void GuiPlatformAdjustDragImage(ImageBuffer& b);
 Image MakeDragImage(const Image& arrow, Image sample);
 
 const char *ClipFmtsText();
-bool        AcceptText	(PasteClip& clip);
+bool        AcceptText(PasteClip& clip);
 String      GetString(PasteClip& clip);
 WString     GetWString(PasteClip& clip);
 String      GetTextClip(const String& text, const String& fmt);
@@ -339,6 +334,7 @@ void        Append(VectorMap<String, ClipData>& data, const String& text);
 void        Append(VectorMap<String, ClipData>& data, const WString& text);
 
 const char *ClipFmtsImage();
+inline bool IsAvailableImage(PasteClip& clip) { return clip.IsAnyAvailable(ClipFmtsImage()); }
 bool        AcceptImage(PasteClip& clip);
 Image       GetImage(PasteClip& clip);
 String      GetImageClip(const Image& m, const String& fmt);
@@ -566,6 +562,7 @@ private:
 	bool         multi_frame:1; // there is more than single frame, they are stored in heap
 	bool         top:1;
 	bool         megarect:1; // support for large virtual screen area - SetRect.TopLeft > 16000
+	bool         erasebg:1; // true before first Paint (in Win32, do WM_ERASEBKGND to avoid flickering)
 
 	static  bool      was_fullrefresh; // indicates that some widgets might have fullrefresh true
 
@@ -691,8 +688,6 @@ private:
 	void    CtrlPaint(SystemDraw& w, const Rect& clip);
 	void    RemoveFullRefresh();
 	static void FullRefreshCleanup();
-	bool    PaintOpaqueAreas(SystemDraw& w, const Rect& r, const Rect& clip, bool nochild = false);
-	void    GatherTransparentAreas(Vector<Rect>& area, SystemDraw& w, Rect r, const Rect& clip);
 	void    ExcludeDHCtrls(SystemDraw& w, const Rect& r, const Rect& clip);
 	void    UpdateArea0(SystemDraw& draw, const Rect& clip, int backpaint);
 	void    UpdateArea(SystemDraw& draw, const Rect& clip);
@@ -1114,7 +1109,7 @@ public:
 	void             RemoveFrame(CtrlFrame& frm);
 	void             InsertFrame(int i, CtrlFrame& frm);
 	int              FindFrame(CtrlFrame& frm) const;
-	int              GetFrameCount() const   { return multi_frame ? frame.multi.count : frame.frame ? 1 : 0; }
+	int              GetFrameCount() const               { return multi_frame ? frame.multi.count : frame.frame ? 1 : 0; }
 	void             ClearFrames();
 
 	bool        IsOpen() const;
@@ -1224,6 +1219,7 @@ public:
 	bool    HasMouseDeep() const;
 	bool    HasMouseInFrame(const Rect& r) const;
 	bool    HasMouseIn(const Rect& r) const;
+	bool    HasMouseIn() const                 { return HasMouseIn(GetSize()); }
 	Point   GetMouseViewPos() const;
 	static Ctrl *GetMouseCtrl();
 
@@ -1436,7 +1432,7 @@ public:
 	       void   DoSkin();
 
 	String        Name() const;
-	static String Name(Ctrl *ctrl);
+	static String Name(const Ctrl *ctrl);
 
 #ifdef _DEBUG
 	virtual void   Dump() const;
@@ -1596,22 +1592,21 @@ public:
 template <class T>
 class FrameLR : public FrameCtrl<T> {
 public:
-	virtual void FrameAddSize(Size& sz) { sz.cx += (cx ? cx : sz.cy) * this->IsShown(); }
+	virtual void FrameAddSize(Size& sz) { sz.cx += Nvl(cx, FrameButtonWidth()) * this->IsShown(); }
 
 protected:
-	int cx;
+	int cx = Null;
 
 public:
 	FrameLR& Width(int _cx)             { cx = _cx; this->RefreshParentLayout(); return *this; }
 	int      GetWidth() const           { return cx; }
-	FrameLR()                           { cx = 0; }
 };
 
 template <class T>
 class FrameLeft : public FrameLR<T> {
 public:
 	virtual void FrameLayout(Rect& r) {
-		LayoutFrameLeft(r, this, this->cx ? this->cx : FrameButtonWidth());
+		LayoutFrameLeft(r, this, Nvl(this->cx, FrameButtonWidth()));
 	}
 };
 
@@ -1619,29 +1614,28 @@ template <class T>
 class FrameRight : public FrameLR<T> {
 public:
 	virtual void FrameLayout(Rect& r) {
-		LayoutFrameRight(r, this, this->cx ? this->cx : FrameButtonWidth());
+		LayoutFrameRight(r, this, Nvl(this->cx, FrameButtonWidth()));
 	}
 };
 
 template <class T>
 class FrameTB : public FrameCtrl<T> {
 public:
-	virtual void FrameAddSize(Size& sz) { sz.cy += (cy ? cy : sz.cx) * this->IsShown(); }
+	virtual void FrameAddSize(Size& sz) { sz.cy += Nvl(cy, sz.cx) * this->IsShown(); }
 
 protected:
-	int cy;
+	int cy = Null;
 
 public:
 	FrameTB& Height(int _cy)            { cy = _cy; this->RefreshParentLayout(); return *this; }
 	int      GetHeight() const          { return cy; }
-	FrameTB()                           { cy = 0; }
 };
 
 template <class T>
 class FrameTop : public FrameTB<T> {
 public:
 	virtual void FrameLayout(Rect& r) {
-		LayoutFrameTop(r, this, this->cy ? this->cy : r.Width());
+		LayoutFrameTop(r, this, Nvl(this->cy, r.Width()));
 	}
 };
 
@@ -1649,7 +1643,7 @@ template <class T>
 class FrameBottom : public FrameTB<T> {
 public:
 	virtual void FrameLayout(Rect& r) {
-		LayoutFrameBottom(r, this, this->cy ? this->cy : r.Width());
+		LayoutFrameBottom(r, this, Nvl(this->cy, r.Width()));
 	}
 };
 
@@ -1833,6 +1827,7 @@ inline T ReadClipboardFormat() {
 	return object;
 }
 
+bool   IsClipboardAvailableImage();
 Image  ReadClipboardImage();
 void   AppendClipboardImage(const Image& img);
 
